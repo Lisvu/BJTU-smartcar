@@ -1,0 +1,21 @@
+在ubantu中下载IBus，运行中文输入法
+打开终端，输入如下指令：
+#更新apt-get
+sudo apt-get update
+#装中文语言包（印象里好像自带了，可以检查一下）
+sudo apt-get install language-pack-zh-hans
+#安装中文输入法
+sudo apt-get install ibus-libpinyin
+sudo apt-get install ibus-clutter
+
+
+点击右上角倒三角
+点击settings设置
+选择左边栏倒数第六个Ragion & language
+最下面的按钮，管理已安装的语言，将Chinese拖拽到最上方，点击应用到系统，输入密码：yahboom
+就在这个按钮的上方可以选择输入源，点击+号，点三个竖点，点others，在搜索栏搜索chinese，出现例如Chinese（pinyin），chinese（智能拼音）等，将需要使用的添加，拖拽到顶部。
+然后在终端重启
+sudo reboot
+或者在右上角重启
+重启后可单击屏幕右上角语言选择图表，在wifi图表的左边，切换成中文，按shift可以中英文切换。
+

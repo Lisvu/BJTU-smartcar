@@ -1,0 +1,316 @@
+[INFO] [launch]: All log files can be found below /root/.ros/log/2025-04-08-15-25-58-053787-jetson-desktop-18819
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [map_server-1]: process started with pid [18821]
+[INFO] [amcl-2]: process started with pid [18823]
+[INFO] [lifecycle_manager-3]: process started with pid [18825]
+[INFO] [controller_server-4]: process started with pid [18827]
+[INFO] [planner_server-5]: process started with pid [18829]
+[INFO] [recoveries_server-6]: process started with pid [18839]
+[INFO] [bt_navigator-7]: process started with pid [18854]
+[INFO] [waypoint_follower-8]: process started with pid [18867]
+[INFO] [lifecycle_manager-9]: process started with pid [18871]
+[lifecycle_manager-3] [INFO] [1744125958.770058385] [lifecycle_manager_localization]: Creating
+[controller_server-4] [INFO] [1744125958.850694030] [controller_server]: 
+[controller_server-4] 	controller_server lifecycle node launched. 
+[controller_server-4] 	Waiting on external lifecycle transitions to activate
+[controller_server-4] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[map_server-1] [INFO] [1744125958.867811943] [map_server]: 
+[map_server-1] 	map_server lifecycle node launched. 
+[map_server-1] 	Waiting on external lifecycle transitions to activate
+[map_server-1] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[map_server-1] [INFO] [1744125958.868167376] [map_server]: Creating
+[controller_server-4] [INFO] [1744125958.873343093] [controller_server]: Creating controller server
+[bt_navigator-7] [INFO] [1744125959.004352355] [bt_navigator]: 
+[bt_navigator-7] 	bt_navigator lifecycle node launched. 
+[bt_navigator-7] 	Waiting on external lifecycle transitions to activate
+[bt_navigator-7] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[bt_navigator-7] [INFO] [1744125959.012074570] [bt_navigator]: Creating
+[controller_server-4] [INFO] [1744125959.051671526] [local_costmap.local_costmap]: 
+[controller_server-4] 	local_costmap lifecycle node launched. 
+[controller_server-4] 	Waiting on external lifecycle transitions to activate
+[controller_server-4] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[controller_server-4] [INFO] [1744125959.054140582] [local_costmap.local_costmap]: Creating Costmap
+[lifecycle_manager-9] [INFO] [1744125959.166481556] [lifecycle_manager_navigation]: Creating
+[lifecycle_manager-3] [INFO] [1744125959.233765210] [lifecycle_manager_localization]: [34m[1mCreating and initializing lifecycle service clients[0m[0m
+[lifecycle_manager-9] [INFO] [1744125959.243033481] [lifecycle_manager_navigation]: [34m[1mCreating and initializing lifecycle service clients[0m[0m
+[waypoint_follower-8] [INFO] [1744125959.316849143] [waypoint_follower]: 
+[waypoint_follower-8] 	waypoint_follower lifecycle node launched. 
+[waypoint_follower-8] 	Waiting on external lifecycle transitions to activate
+[waypoint_follower-8] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[waypoint_follower-8] [INFO] [1744125959.327985686] [waypoint_follower]: Creating
+[lifecycle_manager-3] [INFO] [1744125959.342009407] [lifecycle_manager_localization]: [34m[1mStarting managed nodes bringup...[0m[0m
+[lifecycle_manager-3] [INFO] [1744125959.343372194] [lifecycle_manager_localization]: [34m[1mConfiguring map_server[0m[0m
+[amcl-2] [INFO] [1744125959.431633956] [amcl]: 
+[amcl-2] 	amcl lifecycle node launched. 
+[amcl-2] 	Waiting on external lifecycle transitions to activate
+[amcl-2] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[amcl-2] [INFO] [1744125959.432046255] [amcl]: Creating
+[map_server-1] [INFO] [1744125959.466016378] [map_server]: Configuring
+[map_server-1] [INFO] [map_io]: Loading yaml file: /root/yahboomcar_ros2_ws/yahboomcar_ws/install/yahboomcar_nav/share/yahboomcar_nav/maps/yahboomcar.yaml
+[map_server-1] [DEBUG] [map_io]: resolution: 0.05
+[map_server-1] [DEBUG] [map_io]: origin[0]: -10
+[map_server-1] [DEBUG] [map_io]: origin[1]: -21.2
+[map_server-1] [DEBUG] [map_io]: origin[2]: 0
+[map_server-1] [DEBUG] [map_io]: free_thresh: 0.25
+[map_server-1] [DEBUG] [map_io]: occupied_thresh: 0.65
+[map_server-1] [DEBUG] [map_io]: mode: trinary
+[map_server-1] [DEBUG] [map_io]: negate: 0
+[map_server-1] [INFO] [map_io]: Loading image_file: /root/yahboomcar_ros2_ws/yahboomcar_ws/src/yahboomcar_nav/maps/yahboomcar.pgm
+[lifecycle_manager-9] [INFO] [1744125959.530755102] [lifecycle_manager_navigation]: [34m[1mStarting managed nodes bringup...[0m[0m
+[lifecycle_manager-9] [INFO] [1744125959.532452938] [lifecycle_manager_navigation]: [34m[1mConfiguring controller_server[0m[0m
+[controller_server-4] [INFO] [1744125959.538288640] [controller_server]: Configuring controller interface
+[controller_server-4] [INFO] [1744125959.538524294] [controller_server]: Controller frequency set to 20.0000Hz
+[controller_server-4] [INFO] [1744125959.538567623] [local_costmap.local_costmap]: Configuring
+[controller_server-4] [INFO] [1744125959.565332025] [local_costmap.local_costmap]: Using plugin "obstacle_layer"
+[controller_server-4] [INFO] [1744125959.666265314] [local_costmap.local_costmap]: Subscribed to Topics: scan
+[recoveries_server-6] [INFO] [1744125959.671694446] [recoveries_server]: 
+[recoveries_server-6] 	recoveries_server lifecycle node launched. 
+[recoveries_server-6] 	Waiting on external lifecycle transitions to activate
+[recoveries_server-6] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[planner_server-5] [INFO] [1744125959.720589241] [planner_server]: 
+[planner_server-5] 	planner_server lifecycle node launched. 
+[planner_server-5] 	Waiting on external lifecycle transitions to activate
+[planner_server-5] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[controller_server-4] [INFO] [1744125959.740858500] [local_costmap.local_costmap]: Initialized plugin "obstacle_layer"
+[controller_server-4] [INFO] [1744125959.740982855] [local_costmap.local_costmap]: Using plugin "inflation_layer"
+[controller_server-4] [INFO] [1744125959.747037923] [local_costmap.local_costmap]: Initialized plugin "inflation_layer"
+[planner_server-5] [INFO] [1744125959.779039739] [planner_server]: Creating
+[map_server-1] [DEBUG] [map_io]: Read map /root/yahboomcar_ros2_ws/yahboomcar_ws/src/yahboomcar_nav/maps/yahboomcar.pgm: 672 X 832 map @ 0.05 m/cell
+[lifecycle_manager-3] [INFO] [1744125959.823813181] [lifecycle_manager_localization]: [34m[1mConfiguring amcl[0m[0m
+[amcl-2] [INFO] [1744125959.824639250] [amcl]: Configuring
+[amcl-2] [INFO] [1744125959.824838008] [amcl]: initTransforms
+[amcl-2] [INFO] [1744125959.870744758] [amcl]: initPubSub
+[amcl-2] [INFO] [1744125959.920185136] [amcl]: Subscribed to map topic.
+[controller_server-4] [INFO] [1744125959.924649507] [controller_server]: Created progress_checker : progress_checker of type nav2_controller::SimpleProgressChecker
+[controller_server-4] [INFO] [1744125959.940916134] [controller_server]: Created goal_checker : goal_checker of type nav2_controller::SimpleGoalChecker
+[lifecycle_manager-3] [INFO] [1744125959.972335472] [lifecycle_manager_localization]: [34m[1mActivating map_server[0m[0m
+[controller_server-4] [INFO] [1744125959.976411481] [controller_server]: Created controller : FollowPath of type dwb_core::DWBLocalPlanner
+[map_server-1] [INFO] [1744125959.977044649] [map_server]: Activating
+[lifecycle_manager-3] [INFO] [1744125959.984426087] [lifecycle_manager_localization]: [34m[1mActivating amcl[0m[0m
+[amcl-2] [INFO] [1744125959.986445980] [amcl]: Activating
+[amcl-2] [WARN] [1744125959.986533022] [amcl]: Publishing the particle cloud as geometry_msgs/PoseArray msg is deprecated, will be published as nav2_msgs/ParticleCloud in the future
+[amcl-2] [INFO] [1744125959.989688367] [amcl]: Received a 672 X 832 map @ 0.050 m/pix
+[controller_server-4] [INFO] [1744125960.020961109] [controller_server]: Setting transform_tolerance to 0.300000
+[lifecycle_manager-3] [INFO] [1744125960.052027094] [lifecycle_manager_localization]: [34m[1mManaged nodes are active[0m[0m
+[planner_server-5] [INFO] [1744125960.054925409] [global_costmap.global_costmap]: 
+[planner_server-5] 	global_costmap lifecycle node launched. 
+[planner_server-5] 	Waiting on external lifecycle transitions to activate
+[planner_server-5] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[planner_server-5] [INFO] [1744125960.059375539] [global_costmap.global_costmap]: Creating Costmap
+[amcl-2] [INFO] [1744125960.124771113] [amcl]: createLaserObject
+[controller_server-4] [INFO] [1744125960.274096818] [controller_server]: Using critic "RotateToGoal" (dwb_critics::RotateToGoalCritic)
+[controller_server-4] [INFO] [1744125960.276173768] [controller_server]: Critic plugin initialized
+[controller_server-4] [INFO] [1744125960.285682301] [controller_server]: Using critic "Oscillation" (dwb_critics::OscillationCritic)
+[controller_server-4] [INFO] [1744125960.287072161] [controller_server]: Critic plugin initialized
+[controller_server-4] [INFO] [1744125960.287195300] [controller_server]: Using critic "BaseObstacle" (dwb_critics::BaseObstacleCritic)
+[controller_server-4] [INFO] [1744125960.287304903] [controller_server]: Critic plugin initialized
+[controller_server-4] [INFO] [1744125960.287453387] [controller_server]: Using critic "GoalAlign" (dwb_critics::GoalAlignCritic)
+[controller_server-4] [INFO] [1744125960.287691473] [controller_server]: Critic plugin initialized
+[controller_server-4] [INFO] [1744125960.287756307] [controller_server]: Using critic "PathAlign" (dwb_critics::PathAlignCritic)
+[controller_server-4] [INFO] [1744125960.287847221] [controller_server]: Critic plugin initialized
+[controller_server-4] [INFO] [1744125960.287902070] [controller_server]: Using critic "PathDist" (dwb_critics::PathDistCritic)
+[controller_server-4] [INFO] [1744125960.287993497] [controller_server]: Critic plugin initialized
+[controller_server-4] [INFO] [1744125960.288044314] [controller_server]: Using critic "GoalDist" (dwb_critics::GoalDistCritic)
+[controller_server-4] [INFO] [1744125960.288142461] [controller_server]: Critic plugin initialized
+[controller_server-4] [INFO] [1744125960.288179198] [controller_server]: Controller Server has FollowPath  controllers available.
+[lifecycle_manager-9] [INFO] [1744125960.346661313] [lifecycle_manager_navigation]: [34m[1mConfiguring planner_server[0m[0m
+[planner_server-5] [INFO] [1744125960.347366003] [planner_server]: Configuring
+[planner_server-5] [INFO] [1744125960.347445781] [global_costmap.global_costmap]: Configuring
+[planner_server-5] [INFO] [1744125960.382053841] [global_costmap.global_costmap]: Using plugin "static_layer"
+[planner_server-5] [INFO] [1744125960.395382377] [global_costmap.global_costmap]: Subscribing to the map topic (/map) with transient local durability
+[planner_server-5] [INFO] [1744125960.402995597] [global_costmap.global_costmap]: Initialized plugin "static_layer"
+[planner_server-5] [INFO] [1744125960.403085904] [global_costmap.global_costmap]: Using plugin "obstacle_layer"
+[planner_server-5] [INFO] [1744125960.405488590] [global_costmap.global_costmap]: Subscribed to Topics: scan
+[planner_server-5] [INFO] [1744125960.432920305] [global_costmap.global_costmap]: StaticLayer: Resizing costmap to 672 X 832 at 0.050000 m/pix
+[planner_server-5] [INFO] [1744125960.439845059] [global_costmap.global_costmap]: Initialized plugin "obstacle_layer"
+[planner_server-5] [INFO] [1744125960.443199482] [global_costmap.global_costmap]: Using plugin "inflation_layer"
+[planner_server-5] [INFO] [1744125960.443733095] [global_costmap.global_costmap]: Initialized plugin "inflation_layer"
+[planner_server-5] [INFO] [1744125960.501184048] [planner_server]: Created global planner plugin GridBased of type nav2_navfn_planner/NavfnPlanner
+[planner_server-5] [INFO] [1744125960.501321300] [planner_server]: Configuring plugin GridBased of type NavfnPlanner
+[planner_server-5] [INFO] [1744125960.558195022] [planner_server]: Planner Server has GridBased  planners available.
+[lifecycle_manager-9] [INFO] [1744125960.588460250] [lifecycle_manager_navigation]: [34m[1mConfiguring recoveries_server[0m[0m
+[recoveries_server-6] [INFO] [1744125960.589207054] [recoveries_server]: Configuring
+[recoveries_server-6] [INFO] [1744125960.619730176] [recoveries_server]: Creating recovery plugin spin of type nav2_recoveries/Spin
+[recoveries_server-6] [INFO] [1744125960.624860773] [recoveries_server]: Configuring spin
+[recoveries_server-6] [INFO] [1744125960.655401688] [recoveries_server]: Creating recovery plugin backup of type nav2_recoveries/BackUp
+[recoveries_server-6] [INFO] [1744125960.660297366] [recoveries_server]: Configuring backup
+[recoveries_server-6] [INFO] [1744125960.698132198] [recoveries_server]: Creating recovery plugin wait of type nav2_recoveries/Wait
+[recoveries_server-6] [INFO] [1744125960.700724424] [recoveries_server]: Configuring wait
+[lifecycle_manager-9] [INFO] [1744125960.728139083] [lifecycle_manager_navigation]: [34m[1mConfiguring bt_navigator[0m[0m
+[bt_navigator-7] [INFO] [1744125960.728734330] [bt_navigator]: Configuring
+[bt_navigator-7] [INFO] [1744125960.885595430] [bt_navigator_rclcpp_node]: Waiting for "compute_path_to_pose" action server
+[bt_navigator-7] [INFO] [1744125960.887151758] [bt_navigator_rclcpp_node]: "ComputePathToPose" BtActionNode initialized
+[bt_navigator-7] [INFO] [1744125960.894732786] [bt_navigator_rclcpp_node]: Waiting for "global_costmap/clear_entirely_global_costmap" service
+[bt_navigator-7] [INFO] [1744125960.895582600] [bt_navigator_rclcpp_node]: "ClearGlobalCostmap-Context" BtServiceNode initialized
+[bt_navigator-7] [INFO] [1744125960.928579546] [bt_navigator_rclcpp_node]: Waiting for "follow_path" action server
+[bt_navigator-7] [INFO] [1744125960.932905738] [bt_navigator_rclcpp_node]: "FollowPath" BtActionNode initialized
+[bt_navigator-7] [INFO] [1744125960.942197433] [bt_navigator_rclcpp_node]: Waiting for "local_costmap/clear_entirely_local_costmap" service
+[bt_navigator-7] [INFO] [1744125960.944946912] [bt_navigator_rclcpp_node]: "ClearLocalCostmap-Context" BtServiceNode initialized
+[bt_navigator-7] [INFO] [1744125960.958485469] [bt_navigator_rclcpp_node]: Waiting for "local_costmap/clear_entirely_local_costmap" service
+[bt_navigator-7] [INFO] [1744125960.960219498] [bt_navigator_rclcpp_node]: "ClearLocalCostmap-Subtree" BtServiceNode initialized
+[bt_navigator-7] [INFO] [1744125960.969839298] [bt_navigator_rclcpp_node]: Waiting for "global_costmap/clear_entirely_global_costmap" service
+[bt_navigator-7] [INFO] [1744125960.970627606] [bt_navigator_rclcpp_node]: "ClearGlobalCostmap-Subtree" BtServiceNode initialized
+[bt_navigator-7] [INFO] [1744125961.021585272] [bt_navigator_rclcpp_node]: Waiting for "spin" action server
+[bt_navigator-7] [INFO] [1744125961.022340395] [bt_navigator_rclcpp_node]: "Spin" BtActionNode initialized
+[bt_navigator-7] [INFO] [1744125961.064463338] [bt_navigator_rclcpp_node]: Waiting for "wait" action server
+[bt_navigator-7] [INFO] [1744125961.065529061] [bt_navigator_rclcpp_node]: "Wait" BtActionNode initialized
+[lifecycle_manager-9] [INFO] [1744125961.074326504] [lifecycle_manager_navigation]: [34m[1mConfiguring waypoint_follower[0m[0m
+[waypoint_follower-8] [INFO] [1744125961.075065915] [waypoint_follower]: Configuring
+[lifecycle_manager-9] [INFO] [1744125961.258711132] [lifecycle_manager_navigation]: [34m[1mActivating controller_server[0m[0m
+[controller_server-4] [INFO] [1744125961.259360460] [controller_server]: Activating
+[controller_server-4] [INFO] [1744125961.259448175] [local_costmap.local_costmap]: Activating
+[controller_server-4] [INFO] [1744125961.259474735] [local_costmap.local_costmap]: Checking transform
+[controller_server-4] [INFO] [1744125961.259732150] [local_costmap.local_costmap]: start
+[lifecycle_manager-9] [INFO] [1744125961.265192291] [lifecycle_manager_navigation]: [34m[1mActivating planner_server[0m[0m
+[planner_server-5] [INFO] [1744125961.265903061] [planner_server]: Activating
+[planner_server-5] [INFO] [1744125961.265977815] [global_costmap.global_costmap]: Activating
+[planner_server-5] [INFO] [1744125961.266007000] [global_costmap.global_costmap]: Checking transform
+[planner_server-5] [INFO] [1744125961.266075098] [global_costmap.global_costmap]: Timed out waiting for transform from base_footprint to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-5] [INFO] [1744125961.766144731] [global_costmap.global_costmap]: Timed out waiting for transform from base_footprint to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[amcl-2] [WARN] [1744125961.845593884] [amcl]: ACML cannot publish a pose or update the transform. Please set the initial pose...
+[planner_server-5] [INFO] [1744125962.266119069] [global_costmap.global_costmap]: Timed out waiting for transform from base_footprint to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-5] [INFO] [1744125962.766178692] [global_costmap.global_costmap]: Timed out waiting for transform from base_footprint to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-5] [INFO] [1744125963.266118924] [global_costmap.global_costmap]: Timed out waiting for transform from base_footprint to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-5] [INFO] [1744125963.766517762] [global_costmap.global_costmap]: Timed out waiting for transform from base_footprint to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[amcl-2] [WARN] [1744125963.970234862] [amcl]: ACML cannot publish a pose or update the transform. Please set the initial pose...
+[planner_server-5] [INFO] [1744125964.266132584] [global_costmap.global_costmap]: Timed out waiting for transform from base_footprint to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-5] [INFO] [1744125964.766142362] [global_costmap.global_costmap]: Timed out waiting for transform from base_footprint to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-5] [INFO] [1744125965.266131376] [global_costmap.global_costmap]: Timed out waiting for transform from base_footprint to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-5] [INFO] [1744125965.766125576] [global_costmap.global_costmap]: Timed out waiting for transform from base_footprint to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[amcl-2] [WARN] [1744125966.093796221] [amcl]: ACML cannot publish a pose or update the transform. Please set the initial pose...
+[planner_server-5] [INFO] [1744125966.266132708] [global_costmap.global_costmap]: Timed out waiting for transform from base_footprint to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-5] [INFO] [1744125966.766125507] [global_costmap.global_costmap]: Timed out waiting for transform from base_footprint to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-5] [INFO] [1744125967.266214567] [global_costmap.global_costmap]: Timed out waiting for transform from base_footprint to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-5] [INFO] [1744125967.766146986] [global_costmap.global_costmap]: Timed out waiting for transform from base_footprint to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[amcl-2] [WARN] [1744125968.206132577] [amcl]: ACML cannot publish a pose or update the transform. Please set the initial pose...
+[planner_server-5] [INFO] [1744125968.266120210] [global_costmap.global_costmap]: Timed out waiting for transform from base_footprint to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-5] [INFO] [1744125968.766127517] [global_costmap.global_costmap]: Timed out waiting for transform from base_footprint to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-5] [INFO] [1744125969.266123179] [global_costmap.global_costmap]: Timed out waiting for transform from base_footprint to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[amcl-2] [INFO] [1744125969.750001659] [amcl_rclcpp_node]: Message Filter dropping message: frame 'laser' at time 1744125959.731 for reason 'Unknown'
+[planner_server-5] [INFO] [1744125969.766138237] [global_costmap.global_costmap]: Timed out waiting for transform from base_footprint to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-5] [INFO] [1744125970.266117233] [global_costmap.global_costmap]: Timed out waiting for transform from base_footprint to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[amcl-2] [WARN] [1744125970.331259401] [amcl]: ACML cannot publish a pose or update the transform. Please set the initial pose...
+[planner_server-5] [INFO] [1744125970.766127849] [global_costmap.global_costmap]: Timed out waiting for transform from base_footprint to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-5] [INFO] [1744125971.266123108] [global_costmap.global_costmap]: Timed out waiting for transform from base_footprint to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-5] [INFO] [1744125971.766140354] [global_costmap.global_costmap]: Timed out waiting for transform from base_footprint to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-5] [INFO] [1744125972.266120290] [global_costmap.global_costmap]: Timed out waiting for transform from base_footprint to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[amcl-2] [WARN] [1744125972.455511249] [amcl]: ACML cannot publish a pose or update the transform. Please set the initial pose...
+[planner_server-5] [INFO] [1744125972.766129670] [global_costmap.global_costmap]: Timed out waiting for transform from base_footprint to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-5] [INFO] [1744125973.266127565] [global_costmap.global_costmap]: Timed out waiting for transform from base_footprint to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-5] [INFO] [1744125973.766140440] [global_costmap.global_costmap]: Timed out waiting for transform from base_footprint to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-5] [INFO] [1744125974.266131588] [global_costmap.global_costmap]: Timed out waiting for transform from base_footprint to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[amcl-2] [INFO] [1744125974.400028151] [amcl]: initialPoseReceived
+[amcl-2] [WARN] [1744125974.400290494] [amcl]: Failed to transform initial pose in time (Lookup would require extrapolation into the future.  Requested time 1744125974.400133 but the latest data is at time 1744125974.359657, when looking up transform from frame [base_footprint] to frame [odom])
+[amcl-2] [INFO] [1744125974.400340479] [amcl]: Setting pose (1744125974.400335): 0.271 -0.075 0.013
+[planner_server-5] [INFO] [1744125974.766261368] [global_costmap.global_costmap]: Timed out waiting for transform from base_footprint to map to become available, tf error: Lookup would require extrapolation into the past.  Requested time 1744125974.719970 but the earliest data is at time 1744125975.309955, when looking up transform from frame [base_footprint] to frame [map]
+[planner_server-5] [INFO] [1744125975.266177129] [global_costmap.global_costmap]: Timed out waiting for transform from base_footprint to map to become available, tf error: Lookup would require extrapolation into the past.  Requested time 1744125975.239890 but the earliest data is at time 1744125975.309955, when looking up transform from frame [base_footprint] to frame [map]
+[planner_server-5] [INFO] [1744125975.766362436] [global_costmap.global_costmap]: start
+[planner_server-5] [INFO] [1744125975.817881214] [planner_server]: Activating plugin GridBased of type NavfnPlanner
+[lifecycle_manager-9] [INFO] [1744125975.819170783] [lifecycle_manager_navigation]: [34m[1mActivating recoveries_server[0m[0m
+[recoveries_server-6] [INFO] [1744125975.819553801] [recoveries_server]: Activating
+[recoveries_server-6] [INFO] [1744125975.819628491] [recoveries_server]: Activating spin
+[recoveries_server-6] [INFO] [1744125975.819655628] [recoveries_server]: Activating backup
+[recoveries_server-6] [INFO] [1744125975.819677420] [recoveries_server]: Activating wait
+[lifecycle_manager-9] [INFO] [1744125975.820444800] [lifecycle_manager_navigation]: [34m[1mActivating bt_navigator[0m[0m
+[bt_navigator-7] [INFO] [1744125975.820824042] [bt_navigator]: Activating
+[lifecycle_manager-9] [INFO] [1744125975.821472859] [lifecycle_manager_navigation]: [34m[1mActivating waypoint_follower[0m[0m
+[waypoint_follower-8] [INFO] [1744125975.821845605] [waypoint_follower]: Activating
+[lifecycle_manager-9] [INFO] [1744125975.822503702] [lifecycle_manager_navigation]: [34m[1mManaged nodes are active[0m[0m
+[amcl-2] [INFO] [1744125982.363863814] [amcl]: initialPoseReceived
+[amcl-2] [WARN] [1744125982.364048651] [amcl]: Failed to transform initial pose in time (Lookup would require extrapolation into the future.  Requested time 1744125982.363954 but the latest data is at time 1744125982.319943, when looking up transform from frame [base_footprint] to frame [odom])
+[amcl-2] [INFO] [1744125982.364102412] [amcl]: Setting pose (1744125982.364100): 0.184 0.006 -0.079
+[amcl-2] [INFO] [1744125992.924358148] [amcl]: initialPoseReceived
+[amcl-2] [WARN] [1744125992.924673068] [amcl]: Failed to transform initial pose in time (Lookup would require extrapolation into the future.  Requested time 1744125992.924550 but the latest data is at time 1744125992.879758, when looking up transform from frame [base_footprint] to frame [odom])
+[amcl-2] [INFO] [1744125992.924869905] [amcl]: Setting pose (1744125992.924866): -0.016 -0.031 -0.025
+[amcl-2] [INFO] [1744126002.278746507] [amcl]: initialPoseReceived
+[amcl-2] [WARN] [1744126002.278956593] [amcl]: Failed to transform initial pose in time (Lookup would require extrapolation into the future.  Requested time 1744126002.278853 but the latest data is at time 1744126002.239774, when looking up transform from frame [base_footprint] to frame [odom])
+[amcl-2] [INFO] [1744126002.279000082] [amcl]: Setting pose (1744126002.278997): 0.309 0.045 -0.221
+[bt_navigator-7] [INFO] [1744126013.554016161] [bt_navigator]: Begin navigating from current location to (1.62, -0.11)
+[controller_server-4] [INFO] [1744126013.588543505] [controller_server]: Received a goal, begin computing control effort.
+[controller_server-4] [INFO] [1744126014.639259392] [controller_server]: Passing new path to controller.
+[controller_server-4] [INFO] [1744126015.689291048] [controller_server]: Passing new path to controller.
+[controller_server-4] [INFO] [1744126016.739253083] [controller_server]: Passing new path to controller.
+[controller_server-4] [INFO] [1744126017.739244209] [controller_server]: Passing new path to controller.
+[controller_server-4] [INFO] [1744126018.789271390] [controller_server]: Passing new path to controller.
+[controller_server-4] [INFO] [1744126019.789246826] [controller_server]: Passing new path to controller.
+[controller_server-4] [INFO] [1744126020.839270735] [controller_server]: Passing new path to controller.
+[controller_server-4] [INFO] [1744126021.839240498] [controller_server]: Passing new path to controller.
+[controller_server-4] [INFO] [1744126022.889248687] [controller_server]: Passing new path to controller.
+[controller_server-4] [INFO] [1744126023.939262392] [controller_server]: Passing new path to controller.
+[controller_server-4] [ERROR] [1744126024.703062498] [DWBLocalPlanner]: No valid trajectories out of 610! 
+[controller_server-4] [ERROR] [1744126024.703222663] [DWBLocalPlanner]: 1.00: RotateToGoal/Nonrotation command near goal.
+[controller_server-4] [ERROR] [1744126024.703767029] [controller_server]: No valid trajectories out of 610! 
+[controller_server-4] [WARN] [1744126024.703891608] [controller_server_rclcpp_node]: [follow_path] [ActionServer] Aborting handle.
+[controller_server-4] [INFO] [1744126024.717649125] [local_costmap.local_costmap]: Received request to clear entirely the local_costmap
+[controller_server-4] [INFO] [1744126024.718717250] [controller_server]: Received a goal, begin computing control effort.
+[controller_server-4] [ERROR] [1744126024.729551105] [DWBLocalPlanner]: No valid trajectories out of 610! 
+[controller_server-4] [ERROR] [1744126024.729620131] [DWBLocalPlanner]: 1.00: RotateToGoal/Nonrotation command near goal.
+[controller_server-4] [ERROR] [1744126024.729970444] [controller_server]: No valid trajectories out of 610! 
+[controller_server-4] [WARN] [1744126024.730073903] [controller_server_rclcpp_node]: [follow_path] [ActionServer] Aborting handle.
+[controller_server-4] [INFO] [1744126024.747586208] [local_costmap.local_costmap]: Received request to clear entirely the local_costmap
+[planner_server-5] [INFO] [1744126024.748395253] [global_costmap.global_costmap]: Received request to clear entirely the global_costmap
+[recoveries_server-6] [INFO] [1744126024.750659121] [recoveries_server]: Attempting spin
+[recoveries_server-6] [INFO] [1744126024.750988282] [recoveries_server]: Turning 1.57 for spin recovery.
+[recoveries_server-6] [INFO] [1744126025.751252624] [recoveries_server]: spin running...
+[recoveries_server-6] [INFO] [1744126026.751243402] [recoveries_server]: spin running...
+[recoveries_server-6] [INFO] [1744126027.751249808] [recoveries_server]: spin running...
+[recoveries_server-6] [INFO] [1744126028.451348989] [recoveries_server]: spin completed successfully
+[recoveries_server-6] [INFO] [1744126028.478441645] [recoveries_server]: Attempting wait
+[recoveries_server-6] [INFO] [1744126029.480444315] [recoveries_server]: wait running...
+[recoveries_server-6] [INFO] [1744126030.480578722] [recoveries_server]: wait running...
+[recoveries_server-6] [INFO] [1744126031.480456205] [recoveries_server]: wait running...
+[recoveries_server-6] [INFO] [1744126032.480500455] [recoveries_server]: wait running...
+[recoveries_server-6] [INFO] [1744126033.480805395] [recoveries_server]: wait running...
+[recoveries_server-6] [INFO] [1744126033.481809614] [recoveries_server]: wait completed successfully
+[controller_server-4] [INFO] [1744126033.527940347] [controller_server]: Received a goal, begin computing control effort.
+[controller_server-4] [ERROR] [1744126033.537782497] [DWBLocalPlanner]: No valid trajectories out of 610! 
+[controller_server-4] [ERROR] [1744126033.539282633] [DWBLocalPlanner]: 1.00: RotateToGoal/Nonrotation command near goal.
+[controller_server-4] [ERROR] [1744126033.540127199] [controller_server]: No valid trajectories out of 610! 
+[controller_server-4] [WARN] [1744126033.540506537] [controller_server_rclcpp_node]: [follow_path] [ActionServer] Aborting handle.
+[controller_server-4] [INFO] [1744126033.540862131] [controller_server]: Received a goal, begin computing control effort.
+[controller_server-4] [ERROR] [1744126033.550708057] [DWBLocalPlanner]: No valid trajectories out of 610! 
+[controller_server-4] [ERROR] [1744126033.550782331] [DWBLocalPlanner]: 1.00: RotateToGoal/Nonrotation command near goal.
+[controller_server-4] [ERROR] [1744126033.551527087] [controller_server]: No valid trajectories out of 610! 
+[controller_server-4] [WARN] [1744126033.551885528] [controller_server_rclcpp_node]: [follow_path] [ActionServer] Aborting handle.
+[controller_server-4] [INFO] [1744126033.577659559] [local_costmap.local_costmap]: Received request to clear entirely the local_costmap
+[planner_server-5] [INFO] [1744126033.579569402] [global_costmap.global_costmap]: Received request to clear entirely the global_costmap
+[recoveries_server-6] [INFO] [1744126033.581208517] [recoveries_server]: Attempting spin
+[recoveries_server-6] [INFO] [1744126033.581362058] [recoveries_server]: Turning 1.57 for spin recovery.
+[recoveries_server-6] [INFO] [1744126034.581605120] [recoveries_server]: spin running...
+[recoveries_server-6] [INFO] [1744126035.581639836] [recoveries_server]: spin running...
+[recoveries_server-6] [INFO] [1744126036.581659523] [recoveries_server]: spin running...
+[recoveries_server-6] [INFO] [1744126037.081818941] [recoveries_server]: spin completed successfully
+[recoveries_server-6] [INFO] [1744126037.113465385] [recoveries_server]: Attempting wait
+[recoveries_server-6] [INFO] [1744126038.113807369] [recoveries_server]: wait running...
+[WARNING] [launch]: user interrupted with ctrl-c (SIGINT)
+[lifecycle_manager-9] [INFO] [1744126038.224238156] [rclcpp]: signal_handler(signal_value=2)
+[waypoint_follower-8] [INFO] [1744126038.224274669] [rclcpp]: signal_handler(signal_value=2)
+[planner_server-5] [INFO] [1744126038.224377424] [rclcpp]: signal_handler(signal_value=2)
+[controller_server-4] [INFO] [1744126038.224377936] [rclcpp]: signal_handler(signal_value=2)
+[map_server-1] [INFO] [1744126038.224365967] [rclcpp]: signal_handler(signal_value=2)
+[amcl-2] [INFO] [1744126038.224466130] [rclcpp]: signal_handler(signal_value=2)
+[recoveries_server-6] [INFO] [1744126038.224880285] [rclcpp]: signal_handler(signal_value=2)
+[recoveries_server-6] [WARN] [1744126038.232247842] [recoveries_server]: [wait] [ActionServer] Current goal was not completed successfully.
+[recoveries_server-6] [WARN] [1744126038.232297955] [recoveries_server]: [wait] [ActionServer] Aborting handle.
+[waypoint_follower-8] [INFO] [1744126038.234328089] [waypoint_follower]: Destroying
+[bt_navigator-7] [INFO] [1744126038.229984389] [rclcpp]: signal_handler(signal_value=2)
+[bt_navigator-7] [INFO] [1744126038.235822305] [bt_navigator]: Destroying
+[lifecycle_manager-3] [INFO] [1744126038.230168234] [rclcpp]: signal_handler(signal_value=2)
+[lifecycle_manager-3] [INFO] [1744126038.231181829] [lifecycle_manager_localization]: Destroying
+[map_server-1] [INFO] [1744126038.259101966] [map_server]: Destroying
+[lifecycle_manager-9] [INFO] [1744126038.267691796] [lifecycle_manager_navigation]: Destroying
+[bt_navigator-7] [ERROR] [1744126038.281986737] [bt_navigator]: Action server failed while executing action callback: "Failed to create interrupt guard condition in Executor constructor: the given context is not valid, either rcl_init() was not called or rcl_shutdown() was called., at /tmp/binarydeb/ros-foxy-rcl-1.1.14/src/rcl/guard_condition.c:67"
+[bt_navigator-7] [WARN] [1744126038.282051187] [bt_navigator]: [navigate_to_pose] [ActionServer] Aborting handle.
+[amcl-2] [INFO] [1744126038.286216450] [amcl]: Destroying
+[INFO] [recoveries_server-6]: process has finished cleanly [pid 18839]
+[INFO] [planner_server-5]: process has finished cleanly [pid 18829]
+[bt_navigator-7] terminate called after throwing an instance of 'rclcpp::exceptions::RCLError'
+[bt_navigator-7]   what():  Failed to create interrupt guard condition in Executor constructor: the given context is not valid, either rcl_init() was not called or rcl_shutdown() was called., at /tmp/binarydeb/ros-foxy-rcl-1.1.14/src/rcl/guard_condition.c:67
+[INFO] [map_server-1]: process has finished cleanly [pid 18821]
+[ERROR] [bt_navigator-7]: process has died [pid 18854, exit code -6, cmd '/opt/ros/foxy/lib/nav2_bt_navigator/bt_navigator --ros-args -r __node:=bt_navigator --params-file /tmp/tmpb3ehfp2h -r /tf:=tf -r /tf_static:=tf_static'].
+[INFO] [lifecycle_manager-9]: process has finished cleanly [pid 18871]
+[INFO] [controller_server-4]: process has finished cleanly [pid 18827]
+[INFO] [waypoint_follower-8]: process has finished cleanly [pid 18867]
+[INFO] [lifecycle_manager-3]: process has finished cleanly [pid 18825]
+[WARNING] [launch]: user interrupted with ctrl-c (SIGINT) again, ignoring...
+[ERROR] [amcl-2]: process has died [pid 18823, exit code -2, cmd '/opt/ros/foxy/lib/nav2_amcl/amcl --ros-args -r __node:=amcl --params-file /tmp/tmpmqm6mftj -r /tf:=tf -r /tf_static:=tf_static'].

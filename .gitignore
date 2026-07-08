@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg
+*.egg-info/
+.pytest_cache/
+
+# Native / generated artifacts
+*.so
+*.o
+*.a
+build/
+build-bak/
+install/
+log/
+dist/
+
+# ROS / runtime data
+.ros/
+*.bag
+*.db3
+*.mcap
+
+# Temporary data and captures
+tmp/
+*.tmp
+*.log
+
+# Large generated / external files not stored in Git
+yahboomcar_ws/imu.txt
+yahboomcar_ws/imu_raw.txt
+yahboomcar_ws/src/yahboomcar_slam/params/ORBvoc.txt
+
+# Editor / OS files
+.DS_Store
+.vscode/
+.idea/

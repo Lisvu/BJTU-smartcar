@@ -3,6 +3,7 @@ import json
 import math
 import os
 import signal
+import shlex
 import subprocess
 import threading
 import time
@@ -16,6 +17,7 @@ from nav_msgs.msg import OccupancyGrid, Odometry, Path as NavPath
 from rclpy.node import Node
 from sensor_msgs.msg import LaserScan
 from std_msgs.msg import Float32
+from geometry_msgs.msg import PoseWithCovarianceStamped
 
 try:
     import cv2
@@ -25,6 +27,11 @@ except Exception:
 
 BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR / "static"
+MAP_DIRS = [
+    Path("/root/maps"),
+    Path("/root/yahboomcar_ros2_ws/yahboomcar_ws/src/yahboomcar_nav/maps"),
+]
+SELECTED_MAP = None
 
 FRONT_CENTER_DEG = 0.0
 FRONT_HALF_WIDTH_DEG = 35.0
@@ -98,12 +105,14 @@ class RosBridge(Node):
         super().__init__(f"smartcar_web_bridge_{os.getpid()}")
         self.cmd_pub = self.create_publisher(Twist, "/cmd_vel", 10)
         self.goal_pub = self.create_publisher(PoseStamped, "/goal_pose", 10)
-        self.subscriptions = [
+        self.initial_pose_pub = self.create_publisher(PoseWithCovarianceStamped, "/initialpose", 10)
+        self._subscriptions = [
             self.create_subscription(Float32, "/voltage", self.on_voltage, 10),
             self.create_subscription(LaserScan, "/scan", self.on_scan, 10),
             self.create_subscription(OccupancyGrid, "/map", self.on_map, 1),
             self.create_subscription(NavPath, "/plan", self.on_plan, 1),
             self.create_subscription(Odometry, "/odom", self.on_odom, 20),
+            self.create_subscription(PoseWithCovarianceStamped, "/amcl_pose", self.on_amcl_pose, 10),
         ]
 
         self.voltage = None
@@ -112,12 +121,14 @@ class RosBridge(Node):
         self.plan = []
         self.scan_points = []
         self.pose = None
+        self.map_pose = None
         self.obstacle_guard = True
         self.stop_distance = DEFAULT_STOP_DISTANCE_M
         self.last_scan_time = 0.0
         self.last_map_time = 0.0
         self.last_odom_time = 0.0
         self.last_cmd = {"linear_x": 0.0, "linear_y": 0.0, "angular_z": 0.0}
+        self.initial_pose = None
         self.lock = threading.Lock()
 
     def on_voltage(self, msg):
@@ -157,6 +168,16 @@ class RosBridge(Node):
         pose = msg.pose.pose
         with self.lock:
             self.pose = {
+                "x": float(pose.position.x),
+                "y": float(pose.position.y),
+                "theta": quaternion_to_yaw(pose.orientation),
+            }
+            self.last_odom_time = time.time()
+
+    def on_amcl_pose(self, msg):
+        pose = msg.pose.pose
+        with self.lock:
+            self.map_pose = {
                 "x": float(pose.position.x),
                 "y": float(pose.position.y),
                 "theta": quaternion_to_yaw(pose.orientation),
@@ -206,7 +227,8 @@ class RosBridge(Node):
                     "resolution": self.map["resolution"],
                 },
                 "plan_len": len(self.plan),
-                "pose": self.pose,
+                "pose": self.map_pose or self.pose,
+                "pose_source": "amcl" if self.map_pose else "odom",
                 "camera": camera.status(),
                 "processes": ProcessManager.status(),
             }
@@ -216,7 +238,7 @@ class RosBridge(Node):
             return {
                 "map": self.map,
                 "scan": self.scan_points,
-                "pose": self.pose,
+                "pose": self.map_pose or self.pose,
                 "plan": self.plan,
                 "ages": {
                     "scan": time.time() - self.last_scan_time if self.last_scan_time else None,
@@ -224,6 +246,29 @@ class RosBridge(Node):
                     "odom": time.time() - self.last_odom_time if self.last_odom_time else None,
                 },
             }
+
+    def clear_mapping_state(self):
+        with self.lock:
+            self.map = None
+            self.plan = []
+            self.scan_points = []
+            self.map_pose = None
+            self.last_map_time = 0.0
+        return {"ok": True}
+
+    def _publish_twist(self, linear_x=0.0, linear_y=0.0, angular_z=0.0):
+        msg = Twist()
+        msg.linear.x = float(linear_x)
+        msg.linear.y = float(linear_y)
+        msg.angular.z = float(angular_z)
+        self.cmd_pub.publish(msg)
+        with self.lock:
+            self.last_cmd = {
+                "linear_x": msg.linear.x,
+                "linear_y": msg.linear.y,
+                "angular_z": msg.angular.z,
+            }
+        return self.last_cmd
 
     def publish_cmd(self, linear_x=0.0, linear_y=0.0, angular_z=0.0):
         with self.lock:
@@ -238,21 +283,18 @@ class RosBridge(Node):
             linear_y = 0.0
             angular_z = 0.0
 
-        msg = Twist()
-        msg.linear.x = float(linear_x)
-        msg.linear.y = float(linear_y)
-        msg.angular.z = float(angular_z)
-        self.cmd_pub.publish(msg)
-        with self.lock:
-            self.last_cmd = {
-                "linear_x": msg.linear.x,
-                "linear_y": msg.linear.y,
-                "angular_z": msg.angular.z,
-            }
-        return {"ok": True, "blocked": blocked, "cmd": self.last_cmd}
+        cmd = self._publish_twist(linear_x, linear_y, angular_z)
+        return {
+            "ok": True,
+            "blocked": blocked,
+            "cmd": cmd,
+        }
 
     def stop(self):
-        return self.publish_cmd(0.0, 0.0, 0.0)
+        for _ in range(8):
+            self._publish_twist(0.0, 0.0, 0.0)
+            time.sleep(0.02)
+        return {"ok": True, "cmd": self.last_cmd}
 
     def set_guard(self, enabled=None, stop_distance=None):
         with self.lock:
@@ -272,12 +314,42 @@ class RosBridge(Node):
         self.goal_pub.publish(msg)
         return {"ok": True, "goal": {"x": x, "y": y, "theta": theta}}
 
+    def publish_initial_pose(self, x, y, theta):
+        pose_data = {"x": float(x), "y": float(y), "theta": float(theta)}
+        msg = PoseWithCovarianceStamped()
+        msg.header.frame_id = "map"
+        msg.header.stamp = self.get_clock().now().to_msg()
+        msg.pose.pose.position.x = pose_data["x"]
+        msg.pose.pose.position.y = pose_data["y"]
+        msg.pose.pose.orientation = yaw_to_quaternion(pose_data["theta"])
+        msg.pose.covariance[0] = 0.25
+        msg.pose.covariance[7] = 0.25
+        msg.pose.covariance[35] = 0.06853891945200942
+        self.initial_pose_pub.publish(msg)
+        with self.lock:
+            self.initial_pose = pose_data
+        return {"ok": True, "initial_pose": pose_data}
+
+    def republish_initial_pose(self):
+        with self.lock:
+            pose = self.initial_pose
+        if not pose:
+            return
+        for _ in range(3):
+            self.publish_initial_pose(pose["x"], pose["y"], pose["theta"])
+            time.sleep(0.25)
+
 
 class ProcessManager:
     processes = {}
     logs = {}
+    selected_map = None
     external_patterns = {
-        "bringup": "Mcnamu_driver_X3|base_node_X3|sllidar_node",
+        "bringup": (
+            "laser_bringup_launch.py|Mcnamu_driver_X3|base_node_X3|sllidar_node|"
+            "ekf_node|imu_filter_madgwick_node|yahboom_joy_X3|joint_state_publisher|"
+            "robot_state_publisher|static_transform_publisher"
+        ),
         "camera": "astra_camera_node|astra.launch.xml",
         "slam": "slam_gmapping|map_gmapping_launch.py",
         "nav_dwa": "navigation_dwa_launch.py",
@@ -286,22 +358,26 @@ class ProcessManager:
 
     ROS_ENV = (
         "source /opt/ros/foxy/setup.bash && "
-        "source /root/icar_ros2_ws/icar_ws/install/setup.bash && "
+        "source /root/yahboomcar_ros2_ws/software/library_ws/install/setup.bash && source /root/yahboomcar_ros2_ws/yahboomcar_ws/install/setup.bash && "
         "export ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-32} ROS_LOCALHOST_ONLY=0 "
         "RMW_IMPLEMENTATION=${RMW_IMPLEMENTATION:-rmw_fastrtps_cpp} "
         "ROBOT_TYPE=${ROBOT_TYPE:-x3} RPLIDAR_TYPE=${RPLIDAR_TYPE:-a1}"
     )
     COMMANDS = {
         "bringup": (
-            f"{ROS_ENV} && ros2 launch icar_nav laser_bringup_launch.py "
+            f"{ROS_ENV} && ros2 launch yahboomcar_nav laser_bringup_launch.py "
             "robot_type:=x3 rplidar_type:=a1"
         ),
         "camera": f"{ROS_ENV} && ros2 launch astra_camera astra.launch.xml",
-        "slam": f"{ROS_ENV} && ros2 launch icar_nav map_gmapping_launch.py",
+        "slam": f"{ROS_ENV} && ros2 launch yahboomcar_nav map_gmapping_launch.py",
         "mapping_keyboard": f"{ROS_ENV} && ros2 run icar_ctrl yahboom_keyboard",
-        "save_map": f"{ROS_ENV} && ros2 launch icar_nav save_map_launch.py",
-        "nav_dwa": f"{ROS_ENV} && ros2 launch icar_nav navigation_dwa_launch.py",
-        "nav_teb": f"{ROS_ENV} && ros2 launch icar_nav navigation_teb_launch.py",
+        "save_map": (
+            f"{ROS_ENV} && mkdir -p /root/maps && "
+            "map_path=/root/maps/yahboomcar_$(date +%Y%m%d_%H%M%S) && "
+            "ros2 launch yahboomcar_nav save_map_launch.py map_path:=$map_path"
+        ),
+        "nav_dwa": f"{ROS_ENV} && ros2 launch yahboomcar_nav navigation_dwa_launch.py",
+        "nav_teb": f"{ROS_ENV} && ros2 launch yahboomcar_nav navigation_teb_launch.py",
     }
 
     @classmethod
@@ -323,6 +399,8 @@ class ProcessManager:
                 "log": cls.logs.get(name),
             }
         cmd = cls.COMMANDS[name]
+        if name in ("nav_dwa", "nav_teb") and cls.selected_map:
+            cmd = f"{cmd} map:={shlex.quote(cls.selected_map)}"
         log_path = f"/tmp/smartcar_web_{name}.log"
         log_file = open(log_path, "a", buffering=1)
         proc = subprocess.Popen(
@@ -334,15 +412,75 @@ class ProcessManager:
         )
         cls.processes[name] = proc
         cls.logs[name] = log_path
+        if name in ("nav_dwa", "nav_teb") and bridge is not None:
+            threading.Timer(5.0, bridge.republish_initial_pose).start()
         return {"ok": True, "pid": proc.pid, "log": log_path}
 
     @classmethod
-    def stop(cls, name):
+    def stop(cls, name, force_external=False):
         proc = cls.processes.get(name)
         if not proc or proc.poll() is not None:
+            if force_external:
+                cls.stop_external(name)
             return {"ok": True, "running": False}
         os.killpg(os.getpgid(proc.pid), signal.SIGINT)
+        try:
+            proc.wait(timeout=6)
+        except subprocess.TimeoutExpired:
+            os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
+        if force_external:
+            cls.stop_external(name)
         return {"ok": True, "stopped": name}
+
+    @classmethod
+    def stop_external(cls, name):
+        pattern = cls.external_patterns.get(name)
+        if not pattern:
+            return False
+        probe = subprocess.run(
+            ["pgrep", "-f", pattern],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=False,
+        )
+        if probe.returncode != 0:
+            return False
+        for sig in ("-INT", "-TERM"):
+            subprocess.run(
+                ["pkill", sig, "-f", pattern],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                check=False,
+            )
+            time.sleep(0.2)
+        return True
+
+    @classmethod
+    def topic_health(cls):
+        if bridge is None:
+            return {"scan": False, "odom": False, "cmd_vel": False, "map": False}
+        return {
+            "scan": bridge.count_publishers("/scan") > 0,
+            "odom": bridge.count_publishers("/odom") > 0,
+            "cmd_vel": bridge.count_subscribers("/cmd_vel") > 0,
+            "map": bridge.count_publishers("/map") > 0,
+        }
+
+    @classmethod
+    def start_mapping(cls):
+        if bridge is not None:
+            bridge.stop()
+        for name in ("nav_dwa", "nav_teb", "slam", "bringup"):
+            cls.stop(name, force_external=True)
+        if bridge is not None:
+            bridge.clear_mapping_state()
+        result = cls.start("slam")
+        return {
+            "ok": True,
+            "message": "建图启动中，请观察地图和状态刷新",
+            "health": cls.topic_health(),
+            "log": result.get("log"),
+        }
 
     @classmethod
     def status(cls):
@@ -389,6 +527,44 @@ bridge = None
 camera = CameraStream()
 
 
+def list_maps():
+    maps = []
+    seen = set()
+    for directory in MAP_DIRS:
+        if not directory.exists():
+            continue
+        for yaml_path in sorted(directory.glob("*.yaml"), key=lambda p: p.stat().st_mtime, reverse=True):
+            stem = yaml_path.with_suffix("")
+            if str(stem) in seen:
+                continue
+            seen.add(str(stem))
+            image = None
+            for suffix in (".pgm", ".png"):
+                candidate = stem.with_suffix(suffix)
+                if candidate.exists():
+                    image = str(candidate)
+                    break
+            stat = yaml_path.stat()
+            maps.append({
+                "name": stem.name,
+                "yaml": str(yaml_path),
+                "image": image,
+                "directory": str(directory),
+                "updated_at": stat.st_mtime,
+                "updated_text": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(stat.st_mtime)),
+            })
+    return {"maps": maps, "selected": ProcessManager.selected_map}
+
+
+def select_map(yaml_path):
+    path = Path(yaml_path).resolve()
+    valid_paths = {Path(item["yaml"]).resolve() for item in list_maps()["maps"]}
+    if path not in valid_paths:
+        return {"ok": False, "error": "unknown map"}
+    ProcessManager.selected_map = str(path)
+    return {"ok": True, "selected": ProcessManager.selected_map}
+
+
 class Handler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(STATIC_DIR), **kwargs)
@@ -399,7 +575,10 @@ class Handler(SimpleHTTPRequestHandler):
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
-        self.wfile.write(body)
+        try:
+            self.wfile.write(body)
+        except (BrokenPipeError, ConnectionResetError):
+            pass
 
     def read_json(self):
         length = int(self.headers.get("Content-Length", "0"))
@@ -414,6 +593,9 @@ class Handler(SimpleHTTPRequestHandler):
             return
         if parsed.path == "/api/viz":
             self.json_response(bridge.visualization())
+            return
+        if parsed.path == "/api/maps":
+            self.json_response(list_maps())
             return
         if parsed.path == "/api/camera/stream":
             self.camera_stream()
@@ -458,7 +640,15 @@ class Handler(SimpleHTTPRequestHandler):
             elif parsed.path == "/api/process/start":
                 res = ProcessManager.start(data["name"])
             elif parsed.path == "/api/process/stop":
-                res = ProcessManager.stop(data["name"])
+                res = ProcessManager.stop(data["name"], bool(data.get("force_external")))
+            elif parsed.path == "/api/mapping/start":
+                res = ProcessManager.start_mapping()
+            elif parsed.path == "/api/mapping/clear":
+                res = bridge.clear_mapping_state()
+            elif parsed.path == "/api/maps/select":
+                res = select_map(data["yaml"])
+            elif parsed.path == "/api/nav/initial_pose":
+                res = bridge.publish_initial_pose(data["x"], data["y"], data.get("theta", 0.0))
             elif parsed.path == "/api/nav/goal":
                 res = bridge.publish_goal(data["x"], data["y"], data.get("theta", 0.0))
             else:

@@ -4,107 +4,174 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>BJTU Smart Car Console</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css?v=slam-control-pad-20260709" />
 </head>
 <body>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <main class="app">
     <header class="hero">
       <div>
         <p class="eyebrow">BJTU Smart Car</p>
         <h1>智能小车控制台</h1>
-        <p>手动控制、摄像头、SLAM 建图、地图可视化和导航目标点集成面板。</p>
       </div>
-      <button id="stopAll" class="danger big">急停</button>
     </header>
 
-    <section class="dashboard">
-      <article class="card camera-card">
-        <div class="section-head">
-          <h2>摄像头</h2>
-          <span id="cameraState" class="pill">--</span>
-        </div>
-        <div class="video-frame">
-          <img id="cameraView" src="/api/camera/stream" alt="camera stream" />
-        </div>
-      </article>
+    <nav class="nav-tabs" aria-label="功能导航">
+      <button data-page-target="control" class="active">小车控制</button>
+      <button data-page-target="slam">SLAM 建图/导航</button>
+      <button data-page-target="status">电压状态</button>
+    </nav>
 
-      <article class="card map-card">
-        <div class="section-head">
-          <h2>SLAM / 导航地图</h2>
-          <span id="vizState" class="pill">等待数据</span>
-        </div>
-        <canvas id="mapCanvas" width="900" height="560"></canvas>
-        <div class="map-legend">
-          <span><i class="legend robot"></i>小车</span>
-          <span><i class="legend scan"></i>雷达</span>
-          <span><i class="legend plan"></i>路径</span>
-          <span><i class="legend goal"></i>点击地图填入目标点</span>
-        </div>
-      </article>
+    <section id="page-control" class="page active">
+      <section class="dashboard">
+        <article class="card camera-card">
+          <div class="section-head">
+            <h2>摄像头</h2>
+            <span id="cameraState" class="pill">--</span>
+          </div>
+          <div class="video-frame">
+            <img id="cameraView" src="/api/camera/stream" alt="camera stream" />
+          </div>
+        </article>
+
+        <article class="card control-card">
+          <h2>手动控制</h2>
+          <label>线速度 <input id="linearSpeed" type="range" min="0.03" max="0.35" step="0.01" value="0.12"><span id="linearVal">0.12</span> m/s</label>
+          <label>角速度 <input id="angularSpeed" type="range" min="0.1" max="1.2" step="0.05" value="0.45"><span id="angularVal">0.45</span> rad/s</label>
+          <div class="pad">
+            <button data-move="forward">前进</button>
+            <button data-move="left">左转</button>
+            <button data-move="strafeLeft">左平移</button>
+            <button data-move="stop" class="stop">停止</button>
+            <button data-move="strafeRight">右平移</button>
+            <button data-move="right">右转</button>
+            <button data-move="backward">后退</button>
+          </div>
+        </article>
+      </section>
+
+      <section class="grid compact-grid">
+        <article class="card">
+          <h2>底盘/雷达</h2>
+          <div class="actions">
+            <button data-start="bringup">启动底盘/雷达</button>
+            <button data-stop="bringup">停止底盘/雷达</button>
+            <button data-start="camera">启动相机</button>
+          </div>
+        </article>
+
+        <article class="card">
+          <h2>雷达避障</h2>
+          <label class="check"><input id="guardEnabled" type="checkbox" checked> 启用前方避障</label>
+          <label>停车距离 <input id="stopDistance" type="number" min="0.15" max="2" step="0.05" value="0.35"> m</label>
+          <button id="applyGuard">应用设置</button>
+        </article>
+      </section>
     </section>
 
-    <section class="grid">
-      <article class="card status-card">
-        <h2>实时状态</h2>
-        <div class="status-list">
-          <div><span>电压</span><strong id="voltage">--</strong></div>
-          <div><span>前方距离</span><strong id="frontDistance">--</strong></div>
-          <div><span>雷达避障</span><strong id="guardState">--</strong></div>
-          <div><span>地图</span><strong id="mapState">--</strong></div>
-          <div><span>规划点数</span><strong id="planLen">--</strong></div>
-          <div><span>位姿</span><strong id="poseState">--</strong></div>
-        </div>
-        <p id="warning" class="warning"></p>
-      </article>
+    <section id="page-slam" class="page">
+      <section class="slam-layout">
+        <article class="card map-card">
+          <div class="section-head">
+            <h2>SLAM / 导航地图</h2>
+            <span id="vizState" class="pill">等待数据</span>
+          </div>
+          <canvas id="mapCanvas" width="1280" height="860"></canvas>
+          <div class="map-legend">
+            <span><i class="legend robot"></i>小车</span>
+            <span><i class="legend scan"></i>雷达</span>
+            <span><i class="legend plan"></i>路径</span>
+            <span><i class="legend initial"></i>初始位姿</span>
+            <span><i class="legend goal"></i>目标位姿</span>
+          </div>
+        </article>
 
-      <article class="card control-card">
-        <h2>手动控制</h2>
-        <label>线速度 <input id="linearSpeed" type="range" min="0.03" max="0.35" step="0.01" value="0.12"><span id="linearVal">0.12</span> m/s</label>
-        <label>角速度 <input id="angularSpeed" type="range" min="0.1" max="1.2" step="0.05" value="0.45"><span id="angularVal">0.45</span> rad/s</label>
-        <div class="pad">
-          <button data-move="forward">前进</button>
-          <button data-move="left">左转</button>
-          <button data-move="stop" class="stop">停止</button>
-          <button data-move="right">右转</button>
-          <button data-move="backward">后退</button>
-        </div>
-      </article>
+        <div class="slam-side">
+          <article class="card">
+            <div class="section-head">
+              <h2>已有地图</h2>
+              <button id="refreshMaps">刷新</button>
+            </div>
+            <div id="mapList" class="map-list"></div>
+            <p id="selectedMap" class="muted">未选择地图</p>
+          </article>
 
-      <article class="card">
-        <h2>雷达避障</h2>
-        <label class="check"><input id="guardEnabled" type="checkbox" checked> 启用前方避障</label>
-        <label>停车距离 <input id="stopDistance" type="number" min="0.15" max="2" step="0.05" value="0.35"> m</label>
-        <button id="applyGuard">应用设置</button>
-      </article>
+          <article class="card">
+            <h2>SLAM 建图</h2>
+            <div class="actions vertical">
+              <button id="startMapping">启动建图</button>
+              <button id="saveMap">保存地图</button>
+              <button data-stop="slam" data-force-external="true">停止建图</button>
+              <button id="clearMapping">清空本次建图</button>
+            </div>
+            <div class="pad slam-pad">
+              <button data-move="forward">前进</button>
+              <button data-move="left">左转</button>
+              <button data-move="strafeLeft">左平移</button>
+              <button data-move="stop" class="stop">停止</button>
+              <button data-move="strafeRight">右平移</button>
+              <button data-move="right">右转</button>
+              <button data-move="backward">后退</button>
+            </div>
+          </article>
 
-      <article class="card">
-        <h2>SLAM 建图</h2>
-        <div class="actions">
-          <button data-start="bringup">启动底盘/雷达</button>
-          <button data-start="camera">启动相机</button>
-          <button data-start="slam">启动建图</button>
-          <button data-start="save_map">保存地图</button>
-          <button data-stop="slam">停止建图</button>
+          <article class="card">
+            <h2>自动导航</h2>
+            <div class="actions row">
+              <button data-pose-mode="initial">设置初始位姿</button>
+              <button data-pose-mode="goal">设置目标位姿</button>
+            </div>
+            <p id="poseModeState" class="muted">当前点击地图：设置目标位姿</p>
+            <div class="pose-fields">
+              <label>初始 X <input id="initialX" type="number" step="0.05" value="0"></label>
+              <label>初始 Y <input id="initialY" type="number" step="0.05" value="0"></label>
+              <label>初始方向 θ <input id="initialTheta" type="number" step="0.1" value="0"></label>
+              <button id="sendInitialPose">确认初始位姿</button>
+            </div>
+            <div class="pose-fields">
+              <label>目标 X <input id="goalX" type="number" step="0.05" value="0"></label>
+              <label>目标 Y <input id="goalY" type="number" step="0.05" value="0"></label>
+              <label>目标方向 θ <input id="goalTheta" type="number" step="0.1" value="0"></label>
+              <button id="setGoalPose">确认目标位姿</button>
+            </div>
+            <div class="nav-control">
+              <label>导航算法
+                <select id="navAlgorithm">
+                  <option value="nav_dwa">DWA</option>
+                  <option value="nav_teb">TEB</option>
+                </select>
+              </label>
+              <button id="startNavStack">启动导航</button>
+              <button id="startRobotNav">启动小车</button>
+              <button id="stopNavStack">停止导航</button>
+            </div>
+          </article>
         </div>
-      </article>
+      </section>
+    </section>
 
-      <article class="card wide">
-        <h2>自动导航</h2>
-        <div class="actions row">
-          <button data-start="nav_dwa">启动 DWA 导航</button>
-          <button data-start="nav_teb">启动 TEB 导航</button>
-          <button data-stop="nav_dwa">停止 DWA</button>
-          <button data-stop="nav_teb">停止 TEB</button>
-        </div>
-        <div class="goal-box">
-          <label>X <input id="goalX" type="number" step="0.05" value="0"></label>
-          <label>Y <input id="goalY" type="number" step="0.05" value="0"></label>
-          <label>方向 θ <input id="goalTheta" type="number" step="0.1" value="0"></label>
-          <button id="sendGoal">发送目标点</button>
-        </div>
-      </article>
+    <section id="page-status" class="page">
+      <section class="grid">
+        <article class="card status-card">
+          <h2>电压状态</h2>
+          <div class="status-list">
+            <div><span>电压</span><strong id="voltage">--</strong></div>
+            <div><span>前方距离</span><strong id="frontDistance">--</strong></div>
+            <div><span>雷达避障</span><strong id="guardState">--</strong></div>
+            <div><span>地图</span><strong id="mapState">--</strong></div>
+            <div><span>规划点数</span><strong id="planLen">--</strong></div>
+            <div><span>位姿</span><strong id="poseState">--</strong></div>
+          </div>
+          <p id="warning" class="warning"></p>
+        </article>
+
+        <article class="card wide">
+          <h2>功能状态</h2>
+          <div id="processList" class="process-list"></div>
+        </article>
+      </section>
     </section>
   </main>
-  <script src="app.js"></script>
+  <script src="app.js?v=slam-control-pad-20260709"></script>
 </body>
 </html>

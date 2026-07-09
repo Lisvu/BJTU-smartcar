@@ -67,6 +67,7 @@ class OdomPublisher:public rclcpp ::Node
             this->get_parameter<bool>("pub_odom_tf",pub_odom_tf_);
             this->get_parameter<std::string>("odom_frame",odom_frame);
             this->get_parameter<std::string>("base_footprint_frame",base_footprint_frame);
+        last_vel_time_ = rclcpp::Clock().now();
         tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
 
 	  	subscription_ = this->create_subscription<geometry_msgs::msg::Twist>("vel_raw",50,std::bind(&OdomPublisher::handle_vel,this,_1));
@@ -90,6 +91,10 @@ class OdomPublisher:public rclcpp ::Node
 			//angular_velocity_z_ = msg->angular.z * 0.75;
 			angular_velocity_z_ = msg->angular.z;
 			vel_dt_ = (curren_time - last_vel_time_).seconds();
+			if (vel_dt_ < 0.0 || vel_dt_ > 1.0) {
+				last_vel_time_ = curren_time;
+				return;
+			}
             //std::cout<<"curren_time: "<<curren_time.seconds()<<std::endl;
            // std::cout<<"vel_dt: "<<vel_dt_<<std::endl;
     		last_vel_time_ = curren_time;
@@ -183,4 +188,3 @@ int main(int argc, char * argv[])
 	rclcpp::shutdown();
     return 0;
 }
-

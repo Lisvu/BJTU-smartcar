@@ -1,0 +1,2 @@
+nc: 5
+names: ['turn_left','turn_right','ahead','stop','no_entry']

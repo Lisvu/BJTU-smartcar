@@ -1,0 +1,3 @@
+# 车端类别名(detect_headless.py 的 --data 用)
+nc: 5
+names: ['turn_left', 'turn_right', 'ahead', 'stop', 'no_entry']

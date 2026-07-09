@@ -32,6 +32,20 @@ yahboomcar_ws/imu.txt
 yahboomcar_ws/imu_raw.txt
 yahboomcar_ws/src/yahboomcar_slam/params/ORBvoc.txt
 
+# Local YOLO traffic-sign training assets
+yolo-train/.venv/
+yolo-train/yolov5/
+yolo-train/datasets/
+yolo-train/background-data/
+yolo-train/raw_data/
+yolo-train/report/
+yolo-train/runs/
+yolo-train/**/*.pt
+yolo-train/**/*.onnx
+yolo-train/**/*.engine
+yolo-train/**/*.tflite
+yolo-train/**/*.torchscript
+
 # Editor / OS files
 .DS_Store
 .vscode/

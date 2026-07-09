@@ -36,3 +36,23 @@ yahboomcar_ws/src/yahboomcar_slam/params/ORBvoc.txt
 .DS_Store
 .vscode/
 .idea/
+
+# Captured media / runtime outputs
+Rosmaster-App/rosmaster/capture/
+Rosmaster-App/rosmaster/static/Thumbs.db
+**/frames.gv
+**/frames.pdf
+**/odom.txt
+**/odom_raw.txt
+**/nodes.list
+**/nava.nodes
+
+# Generated maps / point clouds / temporary archives
+*.pcd
+*.bt
+*.pgm
+*.yaml.tmp
+*.tar
+*.tar.gz
+*.tgz
+*.zip

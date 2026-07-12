@@ -60,7 +60,6 @@ class CalibrationRunner:
             cap = open_camera(self.args.source, self.args.width, self.args.height)
             for _ in range(self.args.warmup_frames):
                 cap.read()
-            last_status = 0.0
             while not self.stop_event.is_set():
                 ok, frame = cap.read()
                 if not ok:
@@ -102,9 +101,6 @@ class CalibrationRunner:
                         self.output.flush()
                         station.rows.append(row)
                 self.ready_event.set()
-                if now - last_status >= 0.5:
-                    print(f"\rLIVE {status:<80}", end="", flush=True)
-                    last_status = now
                 if self.args.preview:
                     color = (0, 220, 0) if best else (0, 0, 220)
                     if best:
@@ -185,7 +181,10 @@ def main():
             if time.time() >= deadline:
                 runner.stop_event.set()
                 raise SystemExit("startup timed out before the first camera inference")
-        print("Ready. Enter: distance_m [bearing_deg]. Enter done to finish.")
+        with runner.lock:
+            current_status = runner.latest_text
+        print(f"Ready. Current status: {current_status}")
+        print("Commands: check | distance_m [bearing_deg] | done")
         while not runner.stop_event.is_set():
             try:
                 command = input("\nmeasurement> ").strip()
@@ -193,6 +192,10 @@ def main():
                 command = "done"
             if command.lower() in {"done", "quit", "q"}:
                 break
+            if command.lower() in {"check", "status", "c"}:
+                with runner.lock:
+                    print(f"Current status: {runner.latest_text}")
+                continue
             fields = command.split()
             try:
                 distance = float(fields[0])

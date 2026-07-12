@@ -7,6 +7,8 @@ import rclpy
 from rclpy.node import Node
 from std_msgs.msg import Bool, Float32
 
+from battery_status import classify_battery
+
 
 class BatteryMonitor(Node):
     def __init__(self, low_voltage, critical_voltage, interval, voice):
@@ -30,15 +32,11 @@ class BatteryMonitor(Node):
         voltage = float(msg.data)
         now = time.time()
 
-        if voltage <= self.critical_voltage:
-            level = "critical"
-            text = "Battery critical: %.2f volts. Stop and charge now." % voltage
-        elif voltage <= self.low_voltage:
-            level = "low"
-            text = "Battery low: %.2f volts. Please charge soon." % voltage
-        else:
-            level = "ok"
-            text = "Battery voltage normal: %.2f volts." % voltage
+        level, text = classify_battery(
+            voltage,
+            self.low_voltage,
+            self.critical_voltage,
+        )
 
         if level == "ok":
             if self.last_level != "ok":

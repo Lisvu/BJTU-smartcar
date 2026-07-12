@@ -36,8 +36,13 @@ The full raw backup archive is stored on the server at `/root/smartcar_backup/ar
 
 GitHub Actions runs two checks for pushes and pull requests targeting `main`:
 
-- ROS-independent Python syntax checks and unit tests on Python 3.8.
+- ROS-independent Python syntax checks, unit tests, and coverage on Python 3.8.
 - A `bjtu_comm` build and test in a ROS2 Foxy container.
+
+The tested pure-Python modules must maintain 100% statement coverage. Every CI
+run uploads `coverage.xml`, and successful pushes to `main` also produce a
+30-day Jetson source deployment artifact. The artifact contains source and
+configuration rather than x86 binaries, because the vehicle uses ARM64.
 
 The CI scope intentionally excludes hardware-dependent packages that require the
 Jetson, camera, lidar, serial devices, or NVIDIA L4T libraries.
@@ -52,11 +57,17 @@ colcon test --packages-select bjtu_comm
 colcon test-result --verbose
 ```
 
-Run only the hardware-independent unit tests from the package directory:
+Run the hardware-independent unit tests with coverage from the repository root:
 
 ```bash
-cd bjtu_ros2_ws/src/bjtu_comm
-python3 -m pytest test/test_messages.py -v
+python3 -m pip install coverage pytest
+export PYTHONPATH="$PWD/bjtu_ros2_ws/src/bjtu_comm:$PWD/yahboomcar_ws"
+python3 -m coverage run \
+  --source=bjtu_comm.messages,battery_status \
+  -m pytest \
+  bjtu_ros2_ws/src/bjtu_comm/test/test_messages.py \
+  yahboomcar_ws/test/test_battery_status.py
+python3 -m coverage report --show-missing --fail-under=100
 ```
 
 See `docs/CLOUD_PLATFORM_AND_CICD_PLAN.md` for the GitHub workflow, branch

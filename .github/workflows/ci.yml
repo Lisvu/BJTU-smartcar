@@ -105,7 +105,7 @@ jobs:
           cp yahboomcar_ws/battery_status.py dist/smartcar-deployment/
           cp -r ROS2-Foxy/scripts dist/smartcar-deployment/ros2-scripts
           cp README.md dist/smartcar-deployment/
-          cp docs/CLOUD_PLATFORM_AND_CICD_PLAN.md dist/smartcar-deployment/
+          cp docs/CICD_GUIDE.md dist/smartcar-deployment/
           tar -czf dist/bjtu-smartcar-${GITHUB_SHA}.tar.gz \
             -C dist smartcar-deployment
 

@@ -70,5 +70,5 @@ python3 -m coverage run \
 python3 -m coverage report --show-missing --fail-under=100
 ```
 
-See `docs/CLOUD_PLATFORM_AND_CICD_PLAN.md` for the GitHub workflow, branch
+See `docs/CICD_GUIDE.md` for the GitHub workflow, branch
 protection, release, and acceptance plan.

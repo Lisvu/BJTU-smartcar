@@ -148,7 +148,7 @@ def parser():
     p.add_argument("--target-class", default="stop")
     p.add_argument("--duration", type=float, default=6.0)
     p.add_argument("--hfov-deg", type=float, default=60.0)
-    p.add_argument("--conf-thres", type=float, default=0.25)
+    p.add_argument("--conf-thres", type=float, default=0.5)
     p.add_argument("--iou-thres", type=float, default=0.45)
     p.add_argument("--imgsz", type=int, default=640)
     p.add_argument("--device", default="")

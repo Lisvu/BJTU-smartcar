@@ -35,6 +35,7 @@ class CalibrationRunner:
         self.output = output
         self.lock = threading.Lock()
         self.stop_event = threading.Event()
+        self.ready_event = threading.Event()
         self.station: Station | None = None
         self.latest_text = "warming up"
         self.error: Exception | None = None
@@ -100,6 +101,7 @@ class CalibrationRunner:
                         self.output.write(json.dumps(row, separators=(",", ":")) + "\n")
                         self.output.flush()
                         station.rows.append(row)
+                self.ready_event.set()
                 if now - last_status >= 0.5:
                     print(f"\rLIVE {status:<80}", end="", flush=True)
                     last_status = now
@@ -173,7 +175,17 @@ def main():
         runner = CalibrationRunner(args, output)
         thread = threading.Thread(target=runner.run, daemon=True)
         thread.start()
-        print("Wait for LIVE output, then enter: distance_m [bearing_deg]. Enter done to finish.")
+        print("Loading model and opening camera; measurement prompt will appear after the first inference...")
+        deadline = time.time() + 120.0
+        while not runner.ready_event.wait(0.2):
+            if runner.error:
+                runner.stop_event.set()
+                thread.join(timeout=2)
+                raise SystemExit(f"startup failed: {runner.error}")
+            if time.time() >= deadline:
+                runner.stop_event.set()
+                raise SystemExit("startup timed out before the first camera inference")
+        print("Ready. Enter: distance_m [bearing_deg]. Enter done to finish.")
         while not runner.stop_event.is_set():
             try:
                 command = input("\nmeasurement> ").strip()

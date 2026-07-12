@@ -2,6 +2,8 @@ import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String
 
+from bjtu_comm.messages import format_chatter_message
+
 
 class BjtuTalker(Node):
     def __init__(self):
@@ -12,7 +14,7 @@ class BjtuTalker(Node):
 
     def timer_callback(self):
         msg = String()
-        msg.data = f'bjtu_chatter message {self._counter}'
+        msg.data = format_chatter_message(self._counter)
         self.publisher_.publish(msg)
         self.get_logger().info(f'Published: "{msg.data}"')
         self._counter += 1

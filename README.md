@@ -1,5 +1,7 @@
 # BJTU Smart Car
 
+[![CI](https://github.com/Lisvu/BJTU-smartcar/actions/workflows/ci.yml/badge.svg)](https://github.com/Lisvu/BJTU-smartcar/actions/workflows/ci.yml)
+
 This repository contains the source backup for the BJTU Yahboom/Jetson smart car project.
 
 ## Source Layout
@@ -29,3 +31,33 @@ Generated workspaces and large files are not committed:
 - Large runtime data files such as `yahboomcar_ws/imu.txt`, `yahboomcar_ws/imu_raw.txt`, and `yahboomcar_ws/src/yahboomcar_slam/params/ORBvoc.txt`.
 
 The full raw backup archive is stored on the server at `/root/smartcar_backup/archives/`.
+
+## Continuous Integration
+
+GitHub Actions runs two checks for pushes and pull requests targeting `main`:
+
+- ROS-independent Python syntax checks and unit tests on Python 3.8.
+- A `bjtu_comm` build and test in a ROS2 Foxy container.
+
+The CI scope intentionally excludes hardware-dependent packages that require the
+Jetson, camera, lidar, serial devices, or NVIDIA L4T libraries.
+
+Run the ROS2 checks locally on Ubuntu 20.04 with ROS2 Foxy installed:
+
+```bash
+source /opt/ros/foxy/setup.bash
+cd bjtu_ros2_ws
+colcon build --packages-select bjtu_comm
+colcon test --packages-select bjtu_comm
+colcon test-result --verbose
+```
+
+Run only the hardware-independent unit tests from the package directory:
+
+```bash
+cd bjtu_ros2_ws/src/bjtu_comm
+python3 -m pytest test/test_messages.py -v
+```
+
+See `docs/CLOUD_PLATFORM_AND_CICD_PLAN.md` for the GitHub workflow, branch
+protection, release, and acceptance plan.

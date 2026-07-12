@@ -36,6 +36,8 @@ SELECTED_MAP = None
 FRONT_CENTER_DEG = 0.0
 FRONT_HALF_WIDTH_DEG = 35.0
 DEFAULT_STOP_DISTANCE_M = 0.35
+CMD_TIMEOUT_S = 0.45
+CMD_WATCHDOG_INTERVAL_S = 0.05
 
 
 def yaw_to_quaternion(yaw):
@@ -52,11 +54,36 @@ def quaternion_to_yaw(q):
 
 
 class CameraStream:
-    def __init__(self, device="/dev/video0"):
+    def __init__(self, device=None):
         self.device = device
         self.cap = None
         self.lock = threading.Lock()
         self.last_error = None
+
+    def candidate_devices(self):
+        if self.device:
+            return [self.device]
+        return [f"/dev/video{i}" for i in range(8)]
+
+    def try_open_device(self, device):
+        cap = cv2.VideoCapture(device)
+        if not cap.isOpened():
+            cap.release()
+            return None
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+        cap.set(cv2.CAP_PROP_FPS, 20)
+        ok = False
+        for _ in range(5):
+            ret, frame = cap.read()
+            if ret and frame is not None:
+                ok = True
+                break
+            time.sleep(0.05)
+        if not ok:
+            cap.release()
+            return None
+        return cap
 
     def open(self):
         if cv2 is None:
@@ -65,17 +92,27 @@ class CameraStream:
         with self.lock:
             if self.cap and self.cap.isOpened():
                 return True
-            self.cap = cv2.VideoCapture(self.device)
-            if not self.cap.isOpened():
-                self.last_error = f"Cannot open {self.device}"
+            errors = []
+            for device in self.candidate_devices():
+                cap = self.try_open_device(device)
+                if cap is None:
+                    errors.append(device)
+                    continue
+                self.cap = cap
+                self.device = device
+                self.last_error = None
+                return True
+            self.cap = None
+            self.last_error = f"Cannot open camera from: {', '.join(errors)}"
+            return False
+
+    def reset(self):
+        with self.lock:
+            if self.cap:
                 self.cap.release()
-                self.cap = None
-                return False
-            self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-            self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
-            self.cap.set(cv2.CAP_PROP_FPS, 20)
+            self.cap = None
+            self.device = None
             self.last_error = None
-            return True
 
     def frame(self):
         if not self.open():
@@ -84,6 +121,10 @@ class CameraStream:
             ok, frame = self.cap.read()
         if not ok:
             self.last_error = "Camera frame read failed"
+            with self.lock:
+                if self.cap:
+                    self.cap.release()
+                self.cap = None
             return None
         ok, encoded = cv2.imencode(".jpg", frame, [int(cv2.IMWRITE_JPEG_QUALITY), 75])
         if not ok:
@@ -129,7 +170,10 @@ class RosBridge(Node):
         self.last_odom_time = 0.0
         self.last_cmd = {"linear_x": 0.0, "linear_y": 0.0, "angular_z": 0.0}
         self.initial_pose = None
+        self.last_motion_cmd_time = 0.0
         self.lock = threading.Lock()
+        self.watchdog_thread = threading.Thread(target=self.command_watchdog, daemon=True)
+        self.watchdog_thread.start()
 
     def on_voltage(self, msg):
         with self.lock:
@@ -221,6 +265,11 @@ class RosBridge(Node):
                 "stop_distance": self.stop_distance,
                 "obstacle": obstacle,
                 "last_cmd": self.last_cmd,
+                "cmd_timeout": CMD_TIMEOUT_S,
+                "cmd_age": (
+                    time.time() - self.last_motion_cmd_time
+                    if self.last_motion_cmd_time else None
+                ),
                 "map": None if not self.map else {
                     "width": self.map["width"],
                     "height": self.map["height"],
@@ -268,6 +317,10 @@ class RosBridge(Node):
                 "linear_y": msg.linear.y,
                 "angular_z": msg.angular.z,
             }
+            if msg.linear.x or msg.linear.y or msg.angular.z:
+                self.last_motion_cmd_time = time.time()
+            else:
+                self.last_motion_cmd_time = 0.0
         return self.last_cmd
 
     def publish_cmd(self, linear_x=0.0, linear_y=0.0, angular_z=0.0):
@@ -295,6 +348,26 @@ class RosBridge(Node):
             self._publish_twist(0.0, 0.0, 0.0)
             time.sleep(0.02)
         return {"ok": True, "cmd": self.last_cmd}
+
+    def command_watchdog(self):
+        while rclpy.ok():
+            should_stop = False
+            with self.lock:
+                if self.last_motion_cmd_time:
+                    age = time.time() - self.last_motion_cmd_time
+                    moving = any(abs(v) > 1e-6 for v in self.last_cmd.values())
+                    should_stop = moving and age > CMD_TIMEOUT_S
+            if should_stop:
+                msg = Twist()
+                self.cmd_pub.publish(msg)
+                with self.lock:
+                    self.last_cmd = {
+                        "linear_x": 0.0,
+                        "linear_y": 0.0,
+                        "angular_z": 0.0,
+                    }
+                    self.last_motion_cmd_time = 0.0
+            time.sleep(CMD_WATCHDOG_INTERVAL_S)
 
     def set_guard(self, enabled=None, stop_distance=None):
         with self.lock:
@@ -354,6 +427,7 @@ class ProcessManager:
         "slam": "slam_gmapping|map_gmapping_launch.py",
         "nav_dwa": "navigation_dwa_launch.py",
         "nav_teb": "navigation_teb_launch.py",
+        "voice_ctrl": "Voice_Ctrl_Mcnamu_driver_X3",
     }
 
     ROS_ENV = (
@@ -370,7 +444,7 @@ class ProcessManager:
         ),
         "camera": f"{ROS_ENV} && ros2 launch astra_camera astra.launch.xml",
         "slam": f"{ROS_ENV} && ros2 launch yahboomcar_nav map_gmapping_launch.py",
-        "mapping_keyboard": f"{ROS_ENV} && ros2 run icar_ctrl yahboom_keyboard",
+        "mapping_keyboard": f"{ROS_ENV} && ros2 run yahboomcar_ctrl yahboom_keyboard",
         "save_map": (
             f"{ROS_ENV} && mkdir -p /root/maps && "
             "map_path=/root/maps/yahboomcar_$(date +%Y%m%d_%H%M%S) && "
@@ -378,6 +452,7 @@ class ProcessManager:
         ),
         "nav_dwa": f"{ROS_ENV} && ros2 launch yahboomcar_nav navigation_dwa_launch.py",
         "nav_teb": f"{ROS_ENV} && ros2 launch yahboomcar_nav navigation_teb_launch.py",
+        "voice_ctrl": f"{ROS_ENV} && ([ -e /dev/myspeech ] || ln -sf /dev/ttyUSB2 /dev/myspeech) && python3 /safe_voice_ctrl.py",
     }
 
     @classmethod
@@ -431,6 +506,13 @@ class ProcessManager:
         if force_external:
             cls.stop_external(name)
         return {"ok": True, "stopped": name}
+
+    @classmethod
+    def restart(cls, name):
+        cls.stop(name)
+        cls.processes.pop(name, None)
+        time.sleep(0.3)
+        return cls.start(name)
 
     @classmethod
     def stop_external(cls, name):
@@ -487,10 +569,7 @@ class ProcessManager:
         names = set(cls.COMMANDS) | set(cls.processes)
         return {
             name: {
-                "running": (
-                    (name in cls.processes and cls.processes[name].poll() is None)
-                    or cls.external_running(name)
-                ),
+                "running": (name in cls.processes and cls.processes[name].poll() is None),
                 "log": cls.logs.get(name),
             }
             for name in sorted(names)
@@ -500,9 +579,15 @@ class ProcessManager:
     def external_running(cls, name):
         if bridge is not None:
             if name == "bringup":
+                with bridge.lock:
+                    scan_fresh = bool(
+                        bridge.last_scan_time
+                        and time.time() - bridge.last_scan_time < 3.0
+                    )
                 return (
                     bridge.count_subscribers("/cmd_vel") > 0
                     and bridge.count_publishers("/scan") > 0
+                    and scan_fresh
                 )
             if name == "slam":
                 return bridge.count_publishers("/map") > 0
@@ -638,7 +723,22 @@ class Handler(SimpleHTTPRequestHandler):
             elif parsed.path == "/api/guard":
                 res = bridge.set_guard(data.get("enabled"), data.get("stop_distance"))
             elif parsed.path == "/api/process/start":
-                res = ProcessManager.start(data["name"])
+                name = data["name"]
+                if name == "bringup":
+                    ProcessManager.stop("voice_ctrl")
+                    res = ProcessManager.restart(name)
+                elif name == "voice_ctrl":
+                    ProcessManager.stop("bringup")
+                    res = ProcessManager.restart(name)
+                elif name == "camera":
+                    camera.reset()
+                    res = {
+                        "ok": True,
+                        "message": "camera stream reset",
+                        "camera": camera.status(),
+                    }
+                else:
+                    res = ProcessManager.start(name)
             elif parsed.path == "/api/process/stop":
                 res = ProcessManager.stop(data["name"], bool(data.get("force_external")))
             elif parsed.path == "/api/mapping/start":
@@ -659,14 +759,21 @@ class Handler(SimpleHTTPRequestHandler):
             self.json_response({"ok": False, "error": repr(exc)}, 500)
 
 
+class SmartCarHTTPServer(ThreadingHTTPServer):
+    request_queue_size = 64
+    daemon_threads = True
+
+
 def main():
     global bridge
+    os.environ.setdefault("ROS_DOMAIN_ID", "32")
+    os.environ.setdefault("ROS_LOCALHOST_ONLY", "0")
+    os.environ.setdefault("RMW_IMPLEMENTATION", "rmw_fastrtps_cpp")
     rclpy.init()
     bridge = RosBridge()
     spin_thread = threading.Thread(target=rclpy.spin, args=(bridge,), daemon=True)
     spin_thread.start()
-
-    server = ThreadingHTTPServer(("0.0.0.0", 8000), Handler)
+    server = SmartCarHTTPServer(("0.0.0.0", 8000), Handler)
     print("Smart car web console: http://0.0.0.0:8000")
     try:
         server.serve_forever()

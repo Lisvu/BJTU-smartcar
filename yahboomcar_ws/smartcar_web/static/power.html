@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>电压状态 - BJTU Smart Car</title>
+  <link rel="stylesheet" href="style.css?v=20260712b" />
+</head>
+<body data-page="power">
+    <nav class="top-nav">
+      <a class="brand-link" href="index.html">BJTU Smart Car</a>
+      <div class="nav-links">
+        <a href="index.html">控制台</a>
+        <a href="power.html">电压状态</a>
+        <a href="slam.html">SLAM 地图</a>
+      </div>
+    </nav>
+  <main class="app detail-page">
+    <header class="hero compact-hero">
+      <div>
+        <p class="eyebrow">Power</p>
+        <h1>电压状态</h1>
+        <p>底盘电压、电量估算和底盘进程状态。</p>
+      </div>
+      <a class="button-link" href="index.html">返回控制台</a>
+    </header>
+
+    <section class="grid detail-grid">
+      <article class="card metric-card">
+        <h2>当前电压</h2>
+        <strong id="powerVoltage" class="metric-value">--</strong>
+        <div class="battery-bar"><span id="batteryFill"></span></div>
+        <p id="batteryPercent" class="metric-note">--</p>
+      </article>
+      <article class="card">
+        <h2>底盘状态</h2>
+        <div class="status-list">
+          <div><span>底盘/雷达</span><strong id="powerBringup">--</strong></div>
+          <div><span>雷达刷新</span><strong id="powerScanAge">--</strong></div>
+          <div><span>前方距离</span><strong id="powerFrontDistance">--</strong></div>
+        </div>
+        <div class="actions detail-actions">
+          <button id="recoverBringup">启动底盘/雷达</button>
+        </div>
+      </article>
+    </section>
+  </main>
+  <script src="detail.js?v=20260712b"></script>
+</body>
+</html>

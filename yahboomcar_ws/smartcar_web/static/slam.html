@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SLAM 建图 - BJTU Smart Car</title>
+  <link rel="stylesheet" href="style.css?v=20260712b" />
+</head>
+<body data-page="slam">
+    <nav class="top-nav">
+      <a class="brand-link" href="index.html">BJTU Smart Car</a>
+      <div class="nav-links">
+        <a href="index.html">控制台</a>
+        <a href="power.html">电压状态</a>
+        <a href="slam.html">SLAM 地图</a>
+      </div>
+    </nav>
+  <main class="app detail-page">
+    <header class="hero compact-hero">
+      <div>
+        <p class="eyebrow">SLAM</p>
+        <h1>SLAM / 导航地图</h1>
+        <p>地图、雷达点、小车位姿和规划路径详情。</p>
+      </div>
+      <a class="button-link" href="index.html">返回控制台</a>
+    </header>
+
+    <section class="dashboard detail-dashboard">
+      <article class="card map-card detail-map-card">
+        <div class="section-head">
+          <h2>地图视图</h2>
+          <span id="detailVizState" class="pill">等待数据</span>
+        </div>
+        <canvas id="detailMapCanvas" width="1100" height="680"></canvas>
+        <div class="map-legend">
+          <span><i class="legend robot"></i>小车</span>
+          <span><i class="legend scan"></i>雷达</span>
+          <span><i class="legend plan"></i>路径</span>
+        </div>
+      </article>
+      <article class="card">
+        <h2>建图控制</h2>
+        <div class="status-list">
+          <div><span>地图</span><strong id="slamMapState">--</strong></div>
+          <div><span>位姿</span><strong id="slamPoseState">--</strong></div>
+          <div><span>雷达刷新</span><strong id="slamScanAge">--</strong></div>
+        </div>
+        <div class="actions detail-actions">
+          <button data-start="bringup">启动底盘/雷达</button>
+          <button data-start="slam">启动建图</button>
+          <button data-start="save_map">保存地图</button>
+          <button data-stop="slam">停止建图</button>
+        </div>
+      </article>
+    </section>
+  </main>
+  <script src="detail.js?v=20260712b"></script>
+</body>
+</html>

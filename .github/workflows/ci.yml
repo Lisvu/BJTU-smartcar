@@ -30,16 +30,44 @@ jobs:
           python-version: "3.8"
 
       - name: Install test dependencies
-        run: python -m pip install --upgrade pip coverage pytest
+        run: python -m pip install --upgrade pip coverage pytest pyyaml
 
       - name: Check Python syntax
         run: |
           python -m compileall -q \
             bjtu_ros2_ws/src/bjtu_comm/bjtu_comm \
             bjtu_ros2_ws/src/bjtu_comm/test/test_messages.py \
-            yahboomcar_ws/battery_monitor.py \
-            yahboomcar_ws/battery_status.py \
+            ROS2-Foxy/scripts \
+            ROS2-Foxy/deploy \
+            yahboomcar_ws/smartcar_web \
+            yahboomcar_ws/*.py \
             yahboomcar_ws/test/test_battery_status.py
+
+      - name: Check deployment shell scripts
+        run: |
+          find ROS2-Foxy/deploy -type f -name '*.sh' -print0 \
+            | xargs -0 -n1 bash -n
+
+      - name: Check deployment YAML
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          import yaml
+
+          files = list(Path('ROS2-Foxy/deploy').rglob('*.yaml'))
+          if not files:
+              raise SystemExit('No deployment YAML files found')
+          for path in files:
+              with path.open(encoding='utf-8') as stream:
+                  yaml.safe_load(stream)
+              print(f'Valid YAML: {path}')
+          PY
+
+      - name: Check web JavaScript syntax
+        run: |
+          find yahboomcar_ws/smartcar_web/static -type f -name '*.js' -print0 \
+            | xargs -0 -n1 node --check
 
       - name: Run unit tests with coverage
         run: |
@@ -53,7 +81,7 @@ jobs:
           python -m coverage xml -o coverage.xml
 
       - name: Upload coverage report
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: coverage-report
           path: coverage.xml
@@ -104,13 +132,18 @@ jobs:
           cp yahboomcar_ws/battery_monitor.py dist/smartcar-deployment/
           cp yahboomcar_ws/battery_status.py dist/smartcar-deployment/
           cp -r ROS2-Foxy/scripts dist/smartcar-deployment/ros2-scripts
+          cp -r ROS2-Foxy/deploy dist/smartcar-deployment/ros2-deploy
           cp README.md dist/smartcar-deployment/
           cp docs/CICD_GUIDE.md dist/smartcar-deployment/
+          test -f dist/smartcar-deployment/ros2-deploy/d1_nav/scripts/start_d1_slam_nav.sh
+          test -f dist/smartcar-deployment/ros2-deploy/d2_fusion/scripts/run_d2_static_fusion.sh
+          test -f dist/smartcar-deployment/smartcar_web/server.py
           tar -czf dist/bjtu-smartcar-${GITHUB_SHA}.tar.gz \
             -C dist smartcar-deployment
+          tar -tzf dist/bjtu-smartcar-${GITHUB_SHA}.tar.gz > /dev/null
 
       - name: Upload deployment package
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: jetson-deployment-${{ github.sha }}
           path: dist/bjtu-smartcar-${{ github.sha }}.tar.gz

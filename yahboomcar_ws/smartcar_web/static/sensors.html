@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>传感器模块 - BJTU Smart Car</title>
+  <link rel="stylesheet" href="style.css?v=20260713real1" />
+</head>
+<body data-page="sensors">
+  <nav class="top-nav">
+    <a class="brand-link" href="index.html">BJTU Smart Car</a>
+    <div class="nav-links">
+      <a href="index.html">控制台</a>
+      <a href="power.html">电压状态</a>
+      <a href="slam.html">SLAM 地图</a>
+      <a href="sensors.html">传感器模块</a>
+      <a href="bjtu.html">BJTU 功能</a>
+    </div>
+  </nav>
+
+  <main class="app detail-page">
+    <header class="hero compact-hero">
+      <div>
+        <p class="eyebrow">OHCar Sensors</p>
+        <h1>传感器模块</h1>
+        <p>通过 TCP 读取 ohcar 模块上报的温湿度、光照、烟雾、大气压、定位和电量数据。</p>
+      </div>
+      <a class="button-link" href="index.html">返回控制台</a>
+    </header>
+
+    <section class="grid detail-grid sensor-grid">
+      <article class="card">
+        <div class="section-head">
+          <h2>连接配置</h2>
+          <span id="sensorState" class="pill">等待读取</span>
+        </div>
+        <label>主机地址 <input id="sensorHost" type="text" value="192.168.1.11"></label>
+        <label>TCP 端口 <input id="sensorPort" type="number" min="1" max="65535" value="8888"></label>
+        <div class="actions detail-actions">
+          <button id="refreshSensors">读取传感器</button>
+        </div>
+        <p id="sensorError" class="warning"></p>
+      </article>
+
+      <article class="card sensor-status-card">
+        <h2>实时数据</h2>
+        <div class="sensor-values">
+          <div><span>温度</span><strong id="sensorTemperature">--</strong><small>deg C</small></div>
+          <div><span>湿度</span><strong id="sensorHumidity">--</strong><small>%RH</small></div>
+          <div><span>光照</span><strong id="sensorIllumination">--</strong><small>相对值</small></div>
+          <div><span>烟雾</span><strong id="sensorSmoke">--</strong><small>相对值</small></div>
+          <div><span>大气压</span><strong id="sensorPressure">--</strong><small>hPa</small></div>
+          <div><span>模块电量</span><strong id="sensorBattery">--</strong><small>%</small></div>
+        </div>
+      </article>
+
+      <article class="card wide">
+        <h2>定位与原始数据</h2>
+        <div class="status-list">
+          <div><span>经度</span><strong id="sensorLongitude">--</strong></div>
+          <div><span>纬度</span><strong id="sensorLatitude">--</strong></div>
+          <div><span>延迟</span><strong id="sensorLatency">--</strong></div>
+        </div>
+        <pre id="sensorRaw" class="raw-json">--</pre>
+      </article>
+    </section>
+  </main>
+  <script src="detail.js?v=20260713real1"></script>
+</body>
+</html>

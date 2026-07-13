@@ -44,21 +44,34 @@ function bindHold(button) {
   const kind = button.dataset.move;
   let timer = null;
   let activePointer = null;
+  let startedAt = 0;
+  let stopTimer = null;
   const send = () => move(kind).catch(() => {});
+  const finishStop = () => {
+    if (stopTimer) clearTimeout(stopTimer);
+    stopTimer = null;
+    if (kind !== 'stop') move('stop').catch(() => {});
+  };
   const start = (e) => {
     e.preventDefault();
     if (activePointer !== null || timer) return;
-    activePointer = e.pointerId ?? 'mouse';
+    if (stopTimer) clearTimeout(stopTimer);
+    stopTimer = null;
+    activePointer = e.pointerId != null ? e.pointerId : 'mouse';
+    startedAt = Date.now();
     if (button.setPointerCapture && e.pointerId != null) button.setPointerCapture(e.pointerId);
     send();
-    if (kind !== 'stop') timer = setInterval(send, 150);
+    if (kind !== 'stop') timer = setInterval(send, 120);
   };
   const stop = (e) => {
-    if (activePointer !== null && e?.pointerId != null && e.pointerId !== activePointer) return;
+    if (activePointer !== null && e && e.pointerId != null && e.pointerId !== activePointer) return;
     if (timer) clearInterval(timer);
     timer = null;
     activePointer = null;
-    if (kind !== 'stop') move('stop').catch(() => {});
+    if (kind === 'stop') return;
+    const heldMs = Date.now() - startedAt;
+    const delay = Math.max(0, 320 - heldMs);
+    stopTimer = setTimeout(finishStop, delay);
   };
   button.addEventListener('pointerdown', start);
   button.addEventListener('pointerup', stop);

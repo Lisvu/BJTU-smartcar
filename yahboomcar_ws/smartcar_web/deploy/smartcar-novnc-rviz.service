@@ -1,0 +1,13 @@
+[Unit]
+Description=SmartCar noVNC RViz Desktop
+After=network.target docker.service
+Wants=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/smartcar-novnc-rviz.sh
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

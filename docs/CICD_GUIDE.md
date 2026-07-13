@@ -72,12 +72,15 @@ docs/CICD_GUIDE.md
 `Python checks` Job 使用 GitHub 托管的 Linux runner 和 Python 3.8，执行：
 
 1. 检出仓库。
-2. 安装 `pytest` 和 `coverage`。
-3. 使用 `compileall` 检查目标 Python 文件语法。
-4. 执行 14 个纯 Python 单元测试。
-5. 统计目标纯逻辑模块覆盖率。
-6. 要求目标模块语句覆盖率不低于 100%。
-7. 生成并上传 `coverage.xml`。
+2. 安装 `pytest`、`coverage` 和 `PyYAML`。
+3. 使用 `compileall` 检查自研 Python 和 D1/D2 部署脚本语法。
+4. 使用 `bash -n` 检查 D1/D2 Shell 脚本语法。
+5. 解析 D1/D2 YAML，检查配置文件格式。
+6. 使用 `node --check` 检查 Web JavaScript 语法。
+7. 执行 14 个纯 Python 单元测试。
+8. 统计目标纯逻辑模块覆盖率。
+9. 要求目标模块语句覆盖率不低于 100%。
+10. 生成并上传 `coverage.xml`。
 
 当前纳入覆盖率统计的模块：
 
@@ -141,9 +144,10 @@ bjtu-smartcar-<commit-sha>.tar.gz
 - Smart Car Web 控制代码。
 - 电池监控和状态判断脚本。
 - ROS2 自研启动/控制脚本。
+- D1 在线 SLAM/Nav2 和 D2 静态融合部署目录。
 - README 和 CI/CD 说明文档。
 
-部署包只包含源码、脚本、配置和文档，不包含 GitHub x86 runner 生成的 ROS2 二进制。Jetson 使用 ARM64，x86 二进制不能直接在车上运行。
+打包时会检查 D1 启动脚本、D2 融合脚本和 Web 后端是否存在，并验证压缩包可正常读取。部署包只包含源码、脚本、配置和文档，不包含 GitHub x86 runner 生成的 ROS2 二进制。Jetson 使用 ARM64，x86 二进制不能直接在车上运行。
 
 Artifact 保留 30 天，可在对应 Actions 运行页面底部下载。
 

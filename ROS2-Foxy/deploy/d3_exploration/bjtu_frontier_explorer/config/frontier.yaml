@@ -1,0 +1,34 @@
+bjtu_frontier_explorer:
+  ros__parameters:
+    dry_run: true
+    map_topic: /map
+    stop_pose_topic: /bjtu/stop_pose_map
+    map_frame: map
+    base_frame: base_footprint
+    navigate_action: /navigate_to_pose
+    spin_action: /spin
+
+    recompute_period_s: 2.0
+    frontier_connectivity: 8
+    unknown_connectivity: 8
+    min_free_neighbors: 1
+    min_frontier_cells: 3
+
+    distance_bias_m: 0.5
+    area_weight: 1.0
+    information_gain_weight: 0.0
+    information_gain_radius_m: 0.75
+    heading_penalty_weight: 0.0
+
+    occupied_clearance_m: 0.18
+    safe_target_search_radius_m: 2.0
+    frontier_blacklist_radius_m: 0.5
+    frontier_exhaustion_cycles: 3
+
+    approach_standoff_m: 0.7
+    arrive_radius_m: 0.25
+    stop_pose_timeout_s: 1.0
+    spin_target_yaw: 6.283185307179586
+    max_frontier_failures: 0
+    max_approach_failures: 2
+    max_spin_failures: 1

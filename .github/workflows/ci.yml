@@ -30,7 +30,7 @@ jobs:
           python-version: "3.8"
 
       - name: Install test dependencies
-        run: python -m pip install --upgrade pip coverage pytest pyyaml
+        run: python -m pip install --upgrade pip coverage pytest pyyaml numpy
 
       - name: Check Python syntax
         run: |
@@ -79,6 +79,15 @@ jobs:
             -v
           python -m coverage report --show-missing --fail-under=100
           python -m coverage xml -o coverage.xml
+
+      - name: Run D3 exploration tests
+        shell: bash
+        run: |
+          cd ROS2-Foxy/deploy/d3_exploration/bjtu_frontier_explorer
+          PYTHONPATH=. python -m pytest -q test
+
+      - name: Run hardware-independent business logic tests
+        run: python -m pytest -q tests/test_hardware_independent_logic.py
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v6

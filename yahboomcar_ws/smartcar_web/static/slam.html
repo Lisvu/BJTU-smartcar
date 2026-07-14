@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>SLAM 建图 - BJTU Smart Car</title>
-  <link rel="stylesheet" href="style.css?v=20260713k" />
+  <link rel="stylesheet" href="style.css?v=20260714joystick1" />
 </head>
 <body data-page="slam">
     <nav class="top-nav">
@@ -57,14 +57,17 @@
         <h2>建图操控</h2>
         <label>线速度 <input id="slamLinearSpeed" type="range" min="0.03" max="0.30" step="0.01" value="0.10"><span id="slamLinearVal">0.10</span> m/s</label>
         <label>角速度 <input id="slamAngularSpeed" type="range" min="0.1" max="1.0" step="0.05" value="0.35"><span id="slamAngularVal">0.35</span> rad/s</label>
-        <div class="pad slam-pad">
-          <button data-move="forward">前进</button>
-          <button data-move="left">左转</button>
-          <button data-move="strafeLeft">左平移</button>
-          <button data-move="stop" class="stop">停止</button>
-          <button data-move="strafeRight">右平移</button>
-          <button data-move="right">右转</button>
-          <button data-move="backward">后退</button>
+        <div class="joystick-panel">
+          <div id="slamJoystick" class="joystick" aria-label="方向操控盘" role="application">
+            <div class="joystick-cross joystick-cross-vertical"></div>
+            <div class="joystick-cross joystick-cross-horizontal"></div>
+            <div id="slamKnob" class="joystick-knob"></div>
+          </div>
+          <div id="slamStrafeSlider" class="strafe-slider" aria-label="左右平移控制" role="application">
+            <div class="strafe-track"></div>
+            <div id="slamStrafeKnob" class="strafe-knob"></div>
+          </div>
+          <button data-move="stop" class="stop joystick-stop">停止</button>
         </div>
         <p id="slamMoveState" class="warning"></p>
       </article>
@@ -148,6 +151,6 @@
       </article>
     </section>
   </main>
-  <script src="detail.js?v=20260713k"></script>
+  <script src="detail.js?v=20260714joystick1"></script>
 </body>
 </html>

@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SLAM 建图 - BJTU Smart Car</title>
+  <link rel="stylesheet" href="style.css?v=20260713k" />
+</head>
+<body data-page="slam">
+    <nav class="top-nav">
+      <a class="brand-link" href="index.html">BJTU Smart Car</a>
+      <div class="nav-links">
+        <a href="index.html">控制台</a>
+        <a href="power.html">电压状态</a>
+        <a href="slam.html">SLAM 地图</a>
+      <a href="sensors.html">传感器模块</a>
+      <a href="bjtu.html">BJTU 功能</a>
+      </div>
+    </nav>
+  <main class="app detail-page">
+    <header class="hero compact-hero">
+      <div>
+        <p class="eyebrow">SLAM</p>
+        <h1>SLAM / 导航地图</h1>
+        <p>地图、雷达点、小车位姿和规划路径详情。</p>
+      </div>
+      <a class="button-link" href="index.html">返回控制台</a>
+    </header>
+
+    <section class="dashboard detail-dashboard">
+      <article class="card rviz-card">
+        <div class="section-head">
+          <h2>原生 RViz 操作界面</h2>
+          <span id="rvizEmbedState" class="pill">noVNC :6080</span>
+        </div>
+        <iframe id="rvizFrame" class="rviz-frame" title="RViz 原生界面"></iframe>
+        <p class="muted">这里显示完整 RViz 窗口，顶部工具栏里的 2D Pose Estimate、Nav2 Goal / Set Goal 都直接使用 RViz 原生功能。</p>
+      </article>
+
+      <article class="card map-card detail-map-card">
+        <div class="section-head">
+          <h2>地图视图</h2>
+          <span id="detailVizState" class="pill">等待数据</span>
+        </div>
+        <canvas id="detailMapCanvas" width="1500" height="920"></canvas>
+        <div class="map-legend">
+          <span><i class="legend robot"></i>小车</span>
+          <span><i class="legend scan"></i>雷达</span>
+          <span><i class="legend plan"></i>路径</span>
+          <span><i class="legend initial"></i>初始</span>
+          <span><i class="legend goal"></i>目标</span>
+        </div>
+        <p id="mapPointerState" class="muted map-pointer-state">坐标：--</p>
+      </article>
+
+      <article id="slamDriveCard" class="card slam-drive-card">
+        <h2>建图操控</h2>
+        <label>线速度 <input id="slamLinearSpeed" type="range" min="0.03" max="0.30" step="0.01" value="0.10"><span id="slamLinearVal">0.10</span> m/s</label>
+        <label>角速度 <input id="slamAngularSpeed" type="range" min="0.1" max="1.0" step="0.05" value="0.35"><span id="slamAngularVal">0.35</span> rad/s</label>
+        <div class="pad slam-pad">
+          <button data-move="forward">前进</button>
+          <button data-move="left">左转</button>
+          <button data-move="strafeLeft">左平移</button>
+          <button data-move="stop" class="stop">停止</button>
+          <button data-move="strafeRight">右平移</button>
+          <button data-move="right">右转</button>
+          <button data-move="backward">后退</button>
+        </div>
+        <p id="slamMoveState" class="warning"></p>
+      </article>
+
+
+      <article class="card map-manager-card">
+        <div class="section-head">
+          <h2>已保存地图</h2>
+          <button id="refreshMapList">刷新</button>
+        </div>
+        <div id="slamMapList" class="map-list"></div>
+        <p class="muted">当前选择：<strong id="selectedMapName">未选择</strong></p>
+      </article>
+
+      <article id="navWorkflowCard" class="card nav-workflow-card" hidden>
+        <h2>导航设置</h2>
+        <label>导航算法
+          <select id="navAlgorithm">
+            <option value="nav_dwa">DWA</option>
+            <option value="nav_teb">TEB</option>
+          </select>
+        </label>
+        <div class="actions detail-actions">
+          <button id="startNavStack">开启导航功能</button>
+          <button id="stopNavStack">停止导航</button>
+        </div>
+        <div class="actions detail-actions">
+          <button data-slam-pose-mode="initial">在地图上选初始位置</button>
+          <button data-slam-pose-mode="goal">在地图上选目标位置</button>
+        </div>
+        <p class="muted">当前选点模式：<strong id="slamPoseModeState">目标位置</strong></p>
+        <div class="pose-fields">
+          <label>初始 X <input id="initialX" type="number" step="0.05" value="0"></label>
+          <label>初始 Y <input id="initialY" type="number" step="0.05" value="0"></label>
+          <label>初始方向 θ <input id="initialTheta" type="number" step="0.1" value="0"></label>
+          <button id="sendInitialPose">应用初始位姿</button>
+        </div>
+        <div class="pose-fields">
+          <label>目标 X <input id="goalX" type="number" step="0.05" value="0"></label>
+          <label>目标 Y <input id="goalY" type="number" step="0.05" value="0"></label>
+          <label>目标方向 θ <input id="goalTheta" type="number" step="0.1" value="0"></label>
+          <button id="startNavigationGoal">开始导航</button>
+        </div>
+        <div class="status-list compact-status">
+          <div><span>规划路径</span><strong id="slamPlanState">--</strong></div>
+          <div><span>导航状态</span><strong id="navRunState">未运行</strong></div>
+        </div>
+        <p id="navWorkflowState" class="warning"></p>
+      </article>
+
+      <article class="card">
+        <h2>建图控制</h2>
+        <div class="status-list">
+          <div><span>地图</span><strong id="slamMapState">--</strong></div>
+          <div><span>位姿</span><strong id="slamPoseState">--</strong></div>
+          <div><span>雷达刷新</span><strong id="slamScanAge">--</strong></div>
+        </div>
+        <div class="actions detail-actions">
+          <button id="startNativeMap">一键原生建图</button>
+          <button data-stop="rviz_map">关闭原生建图界面</button>
+          <button data-stop="slam">停止建图</button>
+        </div>
+        <div class="actions detail-actions">
+          <button id="startNativeNav">一键原生导航</button>
+          <button data-stop="rviz_nav">关闭原生导航界面</button>
+          <button data-stop="nav_dwa">停止 DWA 导航</button>
+        </div>
+        <div class="actions detail-actions">
+          <button data-start="bringup">仅启动底盘/雷达</button>
+          <button data-start="slam">仅启动建图节点</button>
+          <button data-start="rviz_map">仅打开建图 RViz</button>
+          <button data-start="nav_dwa">仅启动 DWA 导航</button>
+          <button data-start="rviz_nav">仅打开导航 RViz</button>
+        </div>
+        <p class="muted">原生 RViz 会显示在本页上方；在 RViz 顶部工具栏使用 2D Pose Estimate 设置初始位姿，使用 Nav2 Goal / Set Goal 设置目标点。</p>
+        <label>地图名称 <input id="mapSaveName" type="text" value="我的地图" placeholder="输入本次地图名称"></label>
+        <div class="actions detail-actions">
+          <button id="saveNamedMap">保存地图</button>
+        </div>
+        <p id="saveMapState" class="warning"></p>
+      </article>
+    </section>
+  </main>
+  <script src="detail.js?v=20260713k"></script>
+</body>
+</html>

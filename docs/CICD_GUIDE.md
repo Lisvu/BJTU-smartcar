@@ -1,4 +1,4 @@
-# GitHub CI/CD 流水线实施与验收说明
+# GitHub CI/CD 流水线说明
 
 ## 1. 任务范围
 
@@ -40,6 +40,8 @@ bjtu_ros2_ws/src/bjtu_comm/bjtu_comm/messages.py
 bjtu_ros2_ws/src/bjtu_comm/test/test_messages.py
 yahboomcar_ws/battery_status.py
 yahboomcar_ws/test/test_battery_status.py
+ROS2-Foxy/deploy/d3_exploration/bjtu_frontier_explorer/
+tests/test_hardware_independent_logic.py
 docs/CICD_GUIDE.md
 ```
 
@@ -54,6 +56,8 @@ docs/CICD_GUIDE.md
 | `test_messages.py` | 消息格式化正常和异常输入测试 |
 | `battery_status.py` | 不依赖 ROS 的电池状态分类逻辑 |
 | `test_battery_status.py` | 电池阈值、边界和错误配置测试 |
+| `bjtu_frontier_explorer/` | D3 前沿探索实现、配置和 36 个硬件无关测试 |
+| `tests/test_hardware_independent_logic.py` | 交通标志、目标跟随和 PID 等硬件无关业务逻辑测试 |
 
 ## 4. GitHub Actions 触发条件
 
@@ -72,15 +76,19 @@ docs/CICD_GUIDE.md
 `Python checks` Job 使用 GitHub 托管的 Linux runner 和 Python 3.8，执行：
 
 1. 检出仓库。
-2. 安装 `pytest`、`coverage` 和 `PyYAML`。
-3. 使用 `compileall` 检查自研 Python 和 D1/D2 部署脚本语法。
-4. 使用 `bash -n` 检查 D1/D2 Shell 脚本语法。
-5. 解析 D1/D2 YAML，检查配置文件格式。
+2. 安装 `pytest`、`coverage`、`PyYAML` 和 `NumPy`。
+3. 使用 `compileall` 检查 `bjtu_comm`、ROS2 自研脚本、全部部署目录、Web 后端和车辆工作区脚本的 Python 语法。
+4. 使用 `bash -n` 检查 `ROS2-Foxy/deploy` 下的全部 Shell 脚本语法。
+5. 解析 `ROS2-Foxy/deploy` 下的全部 YAML，检查配置文件格式。
 6. 使用 `node --check` 检查 Web JavaScript 语法。
-7. 执行 14 个纯 Python 单元测试。
-8. 统计目标纯逻辑模块覆盖率。
-9. 要求目标模块语句覆盖率不低于 100%。
-10. 生成并上传 `coverage.xml`。
+7. 执行原有 14 个纯 Python 单元测试。
+8. 执行 D3 frontier exploration 的 36 个硬件无关测试。
+9. 执行 15 个 ROS2 节点和激光模块中的硬件无关业务逻辑测试。
+10. 统计原有目标纯逻辑模块覆盖率。
+11. 要求原有目标模块语句覆盖率不低于 100%。
+12. 生成并上传 `coverage.xml`。
+
+因此，当前 Python checks 一共执行 65 个测试。D3 测试和硬件无关业务逻辑测试作为独立步骤运行，避免把它们的覆盖率与原有两个模块的 100% 覆盖率混在一起。
 
 当前纳入覆盖率统计的模块：
 
@@ -89,7 +97,7 @@ bjtu_ros2_ws/src/bjtu_comm/bjtu_comm/messages.py
 yahboomcar_ws/battery_status.py
 ```
 
-当前统计结果：
+当前统计结果（覆盖率统计范围仍是两个目标模块）：
 
 ```text
 Name                                               Stmts   Miss  Cover
@@ -144,10 +152,10 @@ bjtu-smartcar-<commit-sha>.tar.gz
 - Smart Car Web 控制代码。
 - 电池监控和状态判断脚本。
 - ROS2 自研启动/控制脚本。
-- D1 在线 SLAM/Nav2 和 D2 静态融合部署目录。
+- D1 在线 SLAM/Nav2、D2 静态融合和 D3 前沿探索部署目录。
 - README 和 CI/CD 说明文档。
 
-打包时会检查 D1 启动脚本、D2 融合脚本和 Web 后端是否存在，并验证压缩包可正常读取。部署包只包含源码、脚本、配置和文档，不包含 GitHub x86 runner 生成的 ROS2 二进制。Jetson 使用 ARM64，x86 二进制不能直接在车上运行。
+打包时会检查 D1 启动脚本、D2 融合脚本和 Web 后端是否存在，并验证压缩包可正常读取。整个 `ROS2-Foxy/deploy` 会被打包，因此 D3 前沿探索实现、测试和配置也包含在 Artifact 中。部署包只包含源码、脚本、配置和文档，不包含 GitHub x86 runner 生成的 ROS2 二进制。Jetson 使用 ARM64，x86 二进制不能直接在车上运行。
 
 Artifact 保留 30 天，可在对应 Actions 运行页面底部下载。
 
@@ -158,7 +166,7 @@ Artifact 保留 30 天，可在对应 Actions 运行页面底部下载。
 Linux、macOS 或 Git Bash：
 
 ```bash
-python3 -m pip install coverage pytest
+python3 -m pip install coverage pytest pyyaml numpy
 export PYTHONPATH="$PWD/bjtu_ros2_ws/src/bjtu_comm:$PWD/yahboomcar_ws"
 python3 -m coverage run \
   --source=bjtu_comm.messages,battery_status \
@@ -171,7 +179,7 @@ python3 -m coverage report --show-missing --fail-under=100
 Windows PowerShell：
 
 ```powershell
-python -m pip install coverage pytest
+python -m pip install coverage pytest pyyaml numpy
 $env:PYTHONPATH="$PWD\bjtu_ros2_ws\src\bjtu_comm;$PWD\yahboomcar_ws"
 python -m coverage run --source=bjtu_comm.messages,battery_status -m pytest `
   bjtu_ros2_ws/src/bjtu_comm/test/test_messages.py `
@@ -179,18 +187,70 @@ python -m coverage run --source=bjtu_comm.messages,battery_status -m pytest `
 python -m coverage report --show-missing --fail-under=100
 ```
 
-### 8.2 Python 语法检查
+### 8.2 D3 前沿探索测试
+
+Linux、macOS 或 Git Bash：
+
+```bash
+cd ROS2-Foxy/deploy/d3_exploration/bjtu_frontier_explorer
+PYTHONPATH=. python3 -m pytest -q test
+```
+
+Windows PowerShell：
+
+```powershell
+$env:PYTHONPATH="ROS2-Foxy\deploy\d3_exploration\bjtu_frontier_explorer"
+python -m pytest -q ROS2-Foxy/deploy/d3_exploration/bjtu_frontier_explorer/test
+```
+
+### 8.3 其他硬件无关业务逻辑测试
+
+该测试只导入并验证纯计算函数和 PID 状态逻辑。测试文件内使用最小 ROS 消息桩，不启动 ROS 节点、不访问摄像头、雷达、串口或底盘：
+
+```bash
+python3 -m pytest -q tests/test_hardware_independent_logic.py
+```
+
+### 8.4 Python 语法检查
 
 ```bash
 python3 -m compileall -q \
   bjtu_ros2_ws/src/bjtu_comm/bjtu_comm \
   bjtu_ros2_ws/src/bjtu_comm/test/test_messages.py \
-  yahboomcar_ws/battery_monitor.py \
-  yahboomcar_ws/battery_status.py \
+  ROS2-Foxy/scripts \
+  ROS2-Foxy/deploy \
+  yahboomcar_ws/smartcar_web \
+  yahboomcar_ws/*.py \
   yahboomcar_ws/test/test_battery_status.py
 ```
 
-### 8.3 ROS2 构建和测试
+### 8.5 Shell、YAML 和 Web JavaScript 检查
+
+以下命令需要 Linux、macOS 或 Git Bash：
+
+```bash
+find ROS2-Foxy/deploy -type f -name '*.sh' -print0 \
+  | xargs -0 -n1 bash -n
+
+python3 - <<'PY'
+from pathlib import Path
+
+import yaml
+
+files = list(Path('ROS2-Foxy/deploy').rglob('*.yaml'))
+if not files:
+    raise SystemExit('No deployment YAML files found')
+for path in files:
+    with path.open(encoding='utf-8') as stream:
+        yaml.safe_load(stream)
+    print(f'Valid YAML: {path}')
+PY
+
+find yahboomcar_ws/smartcar_web/static -type f -name '*.js' -print0 \
+  | xargs -0 -n1 node --check
+```
+
+### 8.6 ROS2 构建和测试
 
 需要 Ubuntu 20.04 和 ROS2 Foxy：
 
@@ -265,87 +325,3 @@ git grep -n -I -E 'password|secret|token|BEGIN.*PRIVATE KEY'
 ```
 
 命中变量名或示例文本不一定代表泄漏，但必须人工确认没有真实凭据。
-
-## 12. 已验证记录
-
-### PR #1：建立 CI
-
-```text
-https://github.com/Lisvu/BJTU-smartcar/pull/1
-```
-
-完成 Python 测试和 ROS2 Foxy 构建。首轮 ROS2 Job 因旧软件源安装失败，修复后重新运行成功，保留了“失败、定位、修复、通过”的工程记录。
-
-成功运行：
-
-```text
-https://github.com/Lisvu/BJTU-smartcar/actions/runs/29175275325
-```
-
-### PR #2：覆盖率与持续交付
-
-```text
-https://github.com/Lisvu/BJTU-smartcar/pull/2
-```
-
-增加 14 个测试、100% 目标覆盖率阈值、覆盖率报告和 Jetson 部署 Artifact。
-
-`main` 完整成功运行：
-
-```text
-https://github.com/Lisvu/BJTU-smartcar/actions/runs/29177071290
-```
-
-该次运行三个 Job 全部成功，并生成：
-
-```text
-coverage-report
-jetson-deployment-e9356c41232fae940804dc3711f746172275c713
-```
-
-## 13. 验收清单
-
-### CI
-
-- [x] `.github/workflows/ci.yml` 已提交。
-- [x] push 到 `main` 自动触发。
-- [x] Pull Request 自动触发。
-- [x] 支持手动触发。
-- [x] Python 语法检查自动执行。
-- [x] 14 个单元测试自动执行。
-- [x] 目标纯逻辑模块覆盖率阈值为 100%。
-- [x] 覆盖率 XML 自动上传。
-- [x] ROS2 Foxy 自动构建 `bjtu_comm`。
-- [x] ROS2 测试结果自动报告。
-
-### CD
-
-- [x] `main` 测试成功后自动打包。
-- [x] Jetson 源码部署 Artifact 自动上传。
-- [x] Artifact 不包含错误架构的 x86 ROS2 二进制。
-- [x] Artifact 保留 30 天。
-
-### 工程规范
-
-- [x] 使用功能分支和 Pull Request。
-- [x] `main` 已配置分支保护。
-- [x] 合并前要求 Python 和 ROS2 检查通过。
-- [x] 已保留失败后修复并通过的记录。
-- [x] README 包含 CI 徽章和本地验证方法。
-- [x] `.gitignore` 排除构建和测试产物。
-
-## 14. 答辩建议
-
-答辩时可以按以下顺序演示：
-
-1. 展示 GitHub 仓库和 README 顶部的 CI 徽章。
-2. 展示 PR #1 和 PR #2，说明功能分支与代码审查流程。
-3. 展示 Actions 中的 `Python checks`、`ROS2 Foxy build and test` 和 `Package Jetson deployment`。
-4. 展示 14 个测试以及两个目标纯逻辑模块 100% 覆盖率。
-5. 展示首轮失败日志和修复后成功记录，说明流水线能真正发现问题。
-6. 下载并展示 Jetson 部署 Artifact 的内容。
-7. 展示 `main` 分支保护，说明未通过检查的代码不能合并。
-
-推荐表述：
-
-> 项目使用 GitHub Actions 建立了持续集成和持续交付流水线。每次 Pull Request 自动执行 Python 检查、14 个单元测试、100% 目标覆盖率检查以及 ROS2 Foxy 构建测试；代码合并到受保护的 main 分支后，自动生成适用于 Jetson 的源码部署包。

@@ -39,6 +39,12 @@ GitHub Actions runs two checks for pushes and pull requests targeting `main`:
 - ROS-independent Python syntax checks, unit tests, and coverage on Python 3.8.
 - A `bjtu_comm` build and test in a ROS2 Foxy container.
 
+The Python checks execute 14 legacy pure-logic tests, 36 D3 frontier
+exploration tests, and 15 hardware-independent business-logic tests, for 65
+tests in total. The tests cover battery and message formatting, frontier
+exploration, traffic-sign commands, target-following calculations, and PID
+state logic without requiring robot hardware.
+
 The tested pure-Python modules must maintain 100% statement coverage. Every CI
 run uploads `coverage.xml`, and successful pushes to `main` also produce a
 30-day Jetson source deployment artifact. The artifact contains source and
@@ -70,5 +76,18 @@ python3 -m coverage run \
 python3 -m coverage report --show-missing --fail-under=100
 ```
 
-See `docs/CICD_GUIDE.md` for the GitHub workflow, branch
-protection, release, and acceptance plan.
+Run the D3 exploration tests separately:
+
+```bash
+cd ROS2-Foxy/deploy/d3_exploration/bjtu_frontier_explorer
+PYTHONPATH=. python3 -m pytest -q test
+```
+
+Run the other hardware-independent business-logic tests:
+
+```bash
+python3 -m pytest -q tests/test_hardware_independent_logic.py
+```
+
+See `docs/CICD_GUIDE.md` for the GitHub workflow, branch protection, artifact,
+and local validation details.

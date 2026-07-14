@@ -4,11 +4,14 @@ import math
 import os
 import re
 import signal
+import ssl
 import socket
 import shlex
 import subprocess
 import threading
 import time
+import urllib.error
+import urllib.request
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
@@ -50,6 +53,10 @@ DEFAULT_STOP_DISTANCE_M = 0.35
 SENSOR_DEFAULT_HOST = "192.168.1.11"
 SENSOR_DEFAULT_PORT = 8888
 SENSOR_TIMEOUT_S = 2.5
+DEEPSEEK_API_URL = os.environ.get("DEEPSEEK_API_URL", "https://api.deepseek.com/chat/completions")
+DEEPSEEK_MODEL = os.environ.get("DEEPSEEK_MODEL", "deepseek-chat")
+LLM_MOVE_DURATION_MAX_S = 15.0
+LLM_MOVE_DISTANCE_MAX_M = None
 CMD_TIMEOUT_S = 0.45
 CMD_WATCHDOG_INTERVAL_S = 0.05
 
@@ -1134,6 +1141,336 @@ def read_sensor_data(host=SENSOR_DEFAULT_HOST, port=SENSOR_DEFAULT_PORT):
     }
 
 
+
+def parse_spoken_distance_m(text):
+    t = (text or "").strip().lower()
+    m = re.search(r"(\d+(?:\.\d+)?)\s*(?:米|m|meter|meters)", t)
+    if m:
+        return float(m.group(1))
+    cn_digit = {
+        "零": 0, "〇": 0, "一": 1, "二": 2, "两": 2, "三": 3, "四": 4,
+        "五": 5, "六": 6, "七": 7, "八": 8, "九": 9,
+    }
+    m = re.search(r"([零〇一二两三四五六七八九])点([零〇一二两三四五六七八九]+)\s*(?:米|m)?", t)
+    if m:
+        integer = cn_digit.get(m.group(1), 0)
+        decimals = "".join(str(cn_digit.get(ch, 0)) for ch in m.group(2))
+        return float(f"{integer}.{decimals}")
+    zh_nums = {
+        "半": 0.5, "一": 1.0, "二": 2.0, "两": 2.0, "三": 3.0,
+        "四": 4.0, "五": 5.0, "六": 6.0, "七": 7.0, "八": 8.0, "九": 9.0,
+    }
+    for word, value in zh_nums.items():
+        if f"{word}米" in t:
+            return value
+    return None
+
+
+def parse_spoken_angle_deg(text):
+    t = (text or "").strip().lower()
+    m = re.search(r"(\d+(?:\.\d+)?)\s*(?:度|°|degree|degrees)", t)
+    if m:
+        return float(m.group(1))
+    zh_nums = {
+        "十五": 15.0, "三十": 30.0, "四十五": 45.0, "六十": 60.0,
+        "九十": 90.0, "一百八十": 180.0,
+    }
+    for word, value in zh_nums.items():
+        if f"{word}度" in t:
+            return value
+    return None
+
+
+def build_directional_steps(text, distance_m):
+    t = (text or "").strip().lower()
+    if distance_m is None:
+        return None
+    angle_deg = parse_spoken_angle_deg(t)
+    if angle_deg is None:
+        if "右前方" in t or "右前" in t or "左前方" in t or "左前" in t:
+            angle_deg = 45.0
+        elif "右后方" in t or "右后" in t or "左后方" in t or "左后" in t:
+            angle_deg = 45.0
+        else:
+            return None
+    angle_deg = max(0.0, min(89.0, abs(float(angle_deg))))
+    distance_m = max(0.05, abs(float(distance_m)))
+    forward_m = distance_m * math.cos(math.radians(angle_deg))
+    side_m = distance_m * math.sin(math.radians(angle_deg))
+    if "右前方" in t or "右前" in t:
+        turn_action = "turn_right"
+        label = "右前方"
+    elif "左前方" in t or "左前" in t:
+        turn_action = "turn_left"
+        label = "左前方"
+    elif "右后方" in t or "右后" in t:
+        turn_action = "turn_left"
+        label = "右后方"
+        forward_m = -forward_m
+    elif "左后方" in t or "左后" in t:
+        turn_action = "turn_right"
+        label = "左后方"
+        forward_m = -forward_m
+    else:
+        return None
+    first_action = "move_forward" if forward_m >= 0 else "move_backward"
+    steps = []
+    if abs(forward_m) >= 0.03:
+        steps.append({"action": first_action, "distance_m": round(abs(forward_m), 3)})
+    if abs(side_m) >= 0.03:
+        steps.append({"action": turn_action, "angle_deg": 90})
+        side_action = "move_backward" if "后方" in label else "move_forward"
+        steps.append({"action": side_action, "distance_m": round(abs(side_m), 3)})
+    return {
+        "action": "sequence",
+        "steps": steps,
+        "message": f"已将{label}{angle_deg:.0f}度{distance_m:.2f}米分解为多步运动",
+    }
+
+
+def fallback_agent_parse(text):
+    t = (text or "").strip().lower()
+    if not t:
+        return {"action": "none", "message": "没有识别到命令"}
+    distance_m = parse_spoken_distance_m(t)
+    directional = build_directional_steps(t, distance_m)
+    if directional:
+        return directional
+    pairs = [
+        (("急停", "停止", "停车", "停下", "stop"), "stop"),
+        (("前进", "向前", "往前", "forward"), "move_forward"),
+        (("后退", "向后", "往后", "back"), "move_backward"),
+        (("左平移", "向左平移", "左移", "strafe left"), "strafe_left"),
+        (("右平移", "向右平移", "右移", "strafe right"), "strafe_right"),
+        (("左转", "向左转", "turn left"), "turn_left"),
+        (("右转", "向右转", "turn right"), "turn_right"),
+        (("启动底盘", "启动雷达", "启动小车", "启动底盘/雷达"), "start_bringup"),
+        (("启动相机", "打开相机", "开启相机", "摄像头"), "start_camera"),
+        (("启动建图", "开始建图", "slam"), "start_slam"),
+        (("启动导航", "开始导航", "导航"), "start_nav"),
+        (("电压", "电量", "状态"), "status"),
+    ]
+    for keys, action in pairs:
+        if any(k in t for k in keys):
+            result = {"action": action, "duration": 0.8, "message": f"已解析为 {action}"}
+            if distance_m is not None and action in ("move_forward", "move_backward", "strafe_left", "strafe_right"):
+                result["distance_m"] = distance_m
+                result["message"] = f"已解析为 {action} {distance_m:.2f}m"
+            return result
+    return {"action": "none", "message": "只能执行前进、后退、转向、平移、停止、启动底盘、相机、建图、导航和状态查询"}
+
+
+def normalize_agent_plan(plan, text=""):
+    if not isinstance(plan, dict):
+        return fallback_agent_parse(text)
+    directional = build_directional_steps(text, parse_spoken_distance_m(text))
+    if directional:
+        directional["source"] = plan.get("source", "rule_directional_override")
+        return directional
+    steps = plan.get("steps")
+    if isinstance(steps, list) and steps:
+        clean_steps = []
+        for step in steps[:8]:
+            if isinstance(step, dict) and step.get("action"):
+                clean_steps.append(step)
+        if clean_steps:
+            plan["action"] = "sequence"
+            plan["steps"] = clean_steps
+            return plan
+    action = plan.get("action")
+    if action == "sequence":
+        fallback = fallback_agent_parse(text)
+        fallback["message"] = plan.get("message") or fallback.get("message")
+        return fallback
+    if action in ("move_forward", "move_backward", "strafe_left", "strafe_right"):
+        try:
+            if plan.get("distance_m") is not None:
+                plan["distance_m"] = max(0.05, abs(float(plan["distance_m"])))
+        except (TypeError, ValueError):
+            plan.pop("distance_m", None)
+    if action in ("turn_left", "turn_right"):
+        try:
+            if plan.get("angle_deg") is not None:
+                plan["angle_deg"] = max(5.0, min(180.0, abs(float(plan["angle_deg"]))))
+        except (TypeError, ValueError):
+            plan.pop("angle_deg", None)
+    return plan
+
+
+def call_deepseek_agent(text):
+    api_key = os.environ.get("DEEPSEEK_API_KEY", "").strip()
+    if not api_key:
+        key_file = os.environ.get("DEEPSEEK_API_KEY_FILE") or str(BASE_DIR / ".deepseek_api_key")
+        try:
+            api_key = Path(key_file).read_text(encoding="utf-8").strip()
+        except Exception:
+            api_key = ""
+    if not api_key:
+        result = fallback_agent_parse(text)
+        result["source"] = "fallback_no_api_key"
+        return result
+    system_prompt = (
+        "你是智能小车的语音控制解析器。只输出 JSON，不要输出解释。"
+        "把用户中文语音转换为安全动作或动作序列。"
+        "action 只能是 none, status, stop, sequence, move_forward, move_backward, turn_left, turn_right, "
+        "strafe_left, strafe_right, start_bringup, start_camera, start_slam, start_nav。"
+        "如果一个目标需要多个动作才能到达，必须输出 action=sequence 和 steps 数组。"
+        "steps 中每一步 action 只能是 move_forward, move_backward, turn_left, turn_right, strafe_left, strafe_right, stop。"
+        "如果用户说了距离，例如前进1米、后退0.5m、左平移半米，必须输出 distance_m，单位米。"
+        "distance_m 最小 0.05 米，不设置最大距离限制；用户说前进10米就输出 distance_m=10。"
+        "转向可输出 angle_deg，单位度，范围5到180；没有角度时右转/左转默认90度。"
+        "如果用户说“右前方/左前方 N 度 D 米处”，按几何分解：先前进 D*cos(N)，再向对应方向转90度，再前进 D*sin(N)。"
+        "例如“前进到右前方四十五度零点三米处”输出 sequence，steps 为前进0.212米、右转90度、前进0.212米。"
+        "如果用户说“左后方 N 度 D 米处”，倒车时方向相反：先后退 D*cos(N)，再右转90度，再后退 D*sin(N)。"
+        "如果用户说“右后方 N 度 D 米处”，倒车时方向相反：先后退 D*cos(N)，再左转90度，再后退 D*sin(N)。"
+        "如果用户没说距离，移动类动作给 duration，单位秒，范围 0.2 到 2.0。"
+        "不要编造其它动作；不明确就 action=none。"
+        "JSON 单步格式：{\"action\":\"move_forward\",\"distance_m\":1.0,\"message\":\"...\"}。"
+        "JSON 多步格式：{\"action\":\"sequence\",\"steps\":[{\"action\":\"move_forward\",\"distance_m\":0.2},{\"action\":\"turn_right\",\"angle_deg\":90},{\"action\":\"move_forward\",\"distance_m\":0.2}],\"message\":\"...\"}"
+    )
+    payload = {
+        "model": DEEPSEEK_MODEL,
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": text or ""},
+        ],
+        "temperature": 0.1,
+        "max_tokens": 160,
+        "response_format": {"type": "json_object"},
+    }
+    req = urllib.request.Request(
+        DEEPSEEK_API_URL,
+        data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}",
+        },
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            raw = json.loads(resp.read().decode("utf-8"))
+        content = raw["choices"][0]["message"]["content"]
+        result = json.loads(content)
+        result = normalize_agent_plan(result, text)
+        result["source"] = "deepseek"
+        return result
+    except Exception as exc:
+        result = fallback_agent_parse(text)
+        result["source"] = "fallback_deepseek_error"
+        result["llm_error"] = str(exc)
+        return result
+
+
+def execute_agent_step(plan):
+    action = plan.get("action", "none")
+    speed_linear = 0.12
+    speed_angular = 0.35
+    distance_m = plan.get("distance_m")
+    try:
+        distance_m = None if distance_m is None else float(distance_m)
+    except (TypeError, ValueError):
+        distance_m = None
+    distance_based = False
+    if distance_m is not None and action in ("move_forward", "move_backward", "strafe_left", "strafe_right"):
+        distance_m = max(0.05, abs(distance_m))
+        duration = distance_m / max(speed_linear, 0.01)
+        distance_based = True
+    elif action in ("turn_left", "turn_right") and plan.get("angle_deg") is not None:
+        try:
+            angle_deg = max(5.0, min(180.0, abs(float(plan.get("angle_deg")))))
+        except (TypeError, ValueError):
+            angle_deg = 90.0
+        duration = math.radians(angle_deg) / max(speed_angular, 0.01)
+    else:
+        duration = float(plan.get("duration") or 0.8)
+    if distance_based:
+        duration = max(0.2, duration)
+    else:
+        duration = max(0.2, min(LLM_MOVE_DURATION_MAX_S, duration))
+    motion = {
+        "move_forward": (speed_linear, 0.0, 0.0),
+        "move_backward": (-speed_linear, 0.0, 0.0),
+        "strafe_left": (0.0, speed_linear, 0.0),
+        "strafe_right": (0.0, -speed_linear, 0.0),
+        "turn_left": (0.0, 0.0, speed_angular),
+        "turn_right": (0.0, 0.0, -speed_angular),
+    }
+    if action in motion:
+        lx, ly, az = motion[action]
+        deadline = time.time() + duration
+        last = None
+        while time.time() < deadline:
+            last = bridge.publish_cmd(lx, ly, az)
+            time.sleep(0.12)
+            if isinstance(last, dict) and last.get("blocked"):
+                break
+        bridge.stop()
+        response = {"ok": True, "executed": action, "duration": duration, "motion": last}
+        if distance_m is not None:
+            response["distance_m"] = distance_m
+        if action in ("turn_left", "turn_right") and plan.get("angle_deg") is not None:
+            response["angle_deg"] = max(5.0, min(180.0, abs(float(plan.get("angle_deg")))))
+        return response
+    if action == "stop":
+        return {"ok": True, "executed": action, "result": bridge.stop()}
+    if action == "start_bringup":
+        return {"ok": True, "executed": action, "result": ProcessManager.restart("bringup")}
+    if action == "start_camera":
+        camera.reset()
+        result = ProcessManager.restart("camera")
+        result["camera"] = camera.status()
+        return {"ok": True, "executed": action, "result": result}
+    if action == "start_slam":
+        ProcessManager.start("bringup")
+        time.sleep(0.5)
+        return {"ok": True, "executed": action, "result": ProcessManager.start("slam")}
+    if action == "start_nav":
+        ProcessManager.start("bringup")
+        if ProcessManager.selected_map:
+            return {"ok": True, "executed": action, "result": ProcessManager.start("nav_dwa")}
+        return {"ok": False, "executed": action, "error": "请先在 SLAM 页面选择地图"}
+    if action == "status":
+        return {"ok": True, "executed": action, "status": bridge.status()}
+    return {"ok": False, "executed": "none", "message": plan.get("message") or "未执行动作"}
+
+
+def execute_agent_action(plan):
+    plan = normalize_agent_plan(plan)
+    if plan.get("action") == "sequence":
+        results = []
+        for index, step in enumerate(plan.get("steps", []), start=1):
+            step = normalize_agent_plan(step)
+            result = execute_agent_step(step)
+            result["step_index"] = index
+            results.append(result)
+            if not result.get("ok"):
+                bridge.stop()
+                return {
+                    "ok": False,
+                    "executed": "sequence",
+                    "stopped_at": index,
+                    "steps": results,
+                    "message": plan.get("message"),
+                }
+            time.sleep(0.1)
+        bridge.stop()
+        return {
+            "ok": True,
+            "executed": "sequence",
+            "steps": results,
+            "message": plan.get("message"),
+        }
+    return execute_agent_step(plan)
+
+
+def handle_agent_voice_command(text, dry_run=False):
+    plan = normalize_agent_plan(call_deepseek_agent(text), text)
+    if dry_run:
+        return {"ok": True, "text": text, "plan": plan, "dry_run": True}
+    result = execute_agent_action(plan)
+    return {"ok": bool(result.get("ok")), "text": text, "plan": plan, "result": result}
+
 class Handler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(STATIC_DIR), **kwargs)
@@ -1273,6 +1610,8 @@ class Handler(SimpleHTTPRequestHandler):
                 res = bridge.clear_navigation_overlay()
             elif parsed.path == "/api/nav/goal":
                 res = bridge.publish_goal(data["x"], data["y"], data.get("theta", 0.0))
+            elif parsed.path == "/api/agent/voice":
+                res = handle_agent_voice_command(data.get("text", ""), bool(data.get("dry_run")))
             elif parsed.path == "/api/bjtu/start":
                 res = BjtuFeatureManager.start(data["name"])
             elif parsed.path == "/api/bjtu/stop":
@@ -1299,13 +1638,35 @@ def main():
     bridge = RosBridge()
     spin_thread = threading.Thread(target=rclpy.spin, args=(bridge,), daemon=True)
     spin_thread.start()
-    server = SmartCarHTTPServer(("0.0.0.0", 8000), Handler)
+    http_server = SmartCarHTTPServer(("0.0.0.0", 8000), Handler)
+    servers = [http_server]
     print("Smart car web console: http://0.0.0.0:8000")
+
+    cert_file = Path(os.environ.get("SMARTCAR_HTTPS_CERT", BASE_DIR / "certs" / "smartcar.crt"))
+    key_file = Path(os.environ.get("SMARTCAR_HTTPS_KEY", BASE_DIR / "certs" / "smartcar.key"))
+    https_server = None
+    if cert_file.exists() and key_file.exists():
+        https_server = SmartCarHTTPServer(("0.0.0.0", 8443), Handler)
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        context.load_cert_chain(str(cert_file), str(key_file))
+        https_server.socket = context.wrap_socket(https_server.socket, server_side=True)
+        servers.append(https_server)
+        https_thread = threading.Thread(target=https_server.serve_forever, daemon=True)
+        https_thread.start()
+        print("Smart car web console: https://0.0.0.0:8443")
+    else:
+        print(f"HTTPS disabled; missing cert/key: {cert_file} {key_file}")
+
     try:
-        server.serve_forever()
+        http_server.serve_forever()
     except KeyboardInterrupt:
         pass
     finally:
+        for srv in servers:
+            try:
+                srv.shutdown()
+            except Exception:
+                pass
         bridge.stop()
         bridge.destroy_node()
         rclpy.shutdown()

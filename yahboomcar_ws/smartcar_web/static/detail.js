@@ -353,6 +353,128 @@ async function moveSlamCar(kind) {
   return res;
 }
 
+
+function bindSlamJoystickControl(rootId, knobId, stateId) {
+  const root = $(rootId);
+  const knob = $(knobId);
+  if (!root || !knob) return;
+  let activePointer = null;
+  let timer = null;
+  let currentKind = 'stop';
+  const radius = () => Math.max(36, root.clientWidth * 0.34);
+  const setKnob = (x, y) => {
+    knob.style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`;
+  };
+  const send = () => {
+    if (currentKind === 'stop') return;
+    moveSlamCar(currentKind).catch(() => setText(stateId, '运动命令发送失败'));
+  };
+  const update = (event) => {
+    const rect = root.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    let dx = event.clientX - cx;
+    let dy = event.clientY - cy;
+    const max = radius();
+    const dist = Math.hypot(dx, dy);
+    if (dist > max) {
+      dx = dx / dist * max;
+      dy = dy / dist * max;
+    }
+    setKnob(dx, dy);
+    const dead = max * 0.28;
+    if (Math.hypot(dx, dy) < dead) currentKind = 'stop';
+    else if (Math.abs(dy) >= Math.abs(dx)) currentKind = dy < 0 ? 'forward' : 'backward';
+    else currentKind = dx < 0 ? 'left' : 'right';
+    setText(stateId, currentKind === 'stop' ? '' : `操控：${root.dataset[currentKind] || currentKind}`);
+  };
+  const start = (event) => {
+    event.preventDefault();
+    if (activePointer !== null) return;
+    activePointer = event.pointerId;
+    root.setPointerCapture?.(event.pointerId);
+    update(event);
+    send();
+    timer = setInterval(send, 120);
+  };
+  const movePointer = (event) => {
+    if (activePointer !== event.pointerId) return;
+    event.preventDefault();
+    update(event);
+  };
+  const stop = (event) => {
+    if (activePointer !== null && event?.pointerId != null && event.pointerId !== activePointer) return;
+    if (timer) clearInterval(timer);
+    timer = null;
+    activePointer = null;
+    currentKind = 'stop';
+    setKnob(0, 0);
+    setText(stateId, '');
+    moveSlamCar('stop').catch(() => {});
+  };
+  root.addEventListener('pointerdown', start);
+  root.addEventListener('pointermove', movePointer);
+  root.addEventListener('pointerup', stop);
+  root.addEventListener('pointercancel', stop);
+  root.addEventListener('lostpointercapture', stop);
+}
+
+function bindSlamStrafeControl(rootId, knobId, stateId) {
+  const root = $(rootId);
+  const knob = $(knobId);
+  if (!root || !knob) return;
+  let activePointer = null;
+  let timer = null;
+  let currentKind = 'stop';
+  const maxOffset = () => Math.max(44, root.clientWidth * 0.36);
+  const setKnob = (x) => {
+    knob.style.transform = `translate(calc(-50% + ${x}px), -50%)`;
+  };
+  const send = () => {
+    if (currentKind === 'stop') return;
+    moveSlamCar(currentKind).catch(() => setText(stateId, '运动命令发送失败'));
+  };
+  const update = (event) => {
+    const rect = root.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const max = maxOffset();
+    const dx = Math.max(-max, Math.min(max, event.clientX - cx));
+    setKnob(dx);
+    const dead = max * 0.22;
+    currentKind = Math.abs(dx) < dead ? 'stop' : (dx < 0 ? 'strafeLeft' : 'strafeRight');
+    setText(stateId, currentKind === 'stop' ? '' : `操控：${currentKind === 'strafeLeft' ? '左平移' : '右平移'}`);
+  };
+  const start = (event) => {
+    event.preventDefault();
+    if (activePointer !== null) return;
+    activePointer = event.pointerId;
+    root.setPointerCapture?.(event.pointerId);
+    update(event);
+    send();
+    timer = setInterval(send, 120);
+  };
+  const movePointer = (event) => {
+    if (activePointer !== event.pointerId) return;
+    event.preventDefault();
+    update(event);
+  };
+  const stop = (event) => {
+    if (activePointer !== null && event?.pointerId != null && event.pointerId !== activePointer) return;
+    if (timer) clearInterval(timer);
+    timer = null;
+    activePointer = null;
+    currentKind = 'stop';
+    setKnob(0);
+    setText(stateId, '');
+    moveSlamCar('stop').catch(() => {});
+  };
+  root.addEventListener('pointerdown', start);
+  root.addEventListener('pointermove', movePointer);
+  root.addEventListener('pointerup', stop);
+  root.addEventListener('pointercancel', stop);
+  root.addEventListener('lostpointercapture', stop);
+}
+
 function bindSlamHold(button) {
   const kind = button.dataset.move;
   let timer = null;
@@ -398,6 +520,8 @@ function bindSlamHold(button) {
 
 function initSlamDriveControls() {
   document.querySelectorAll('[data-move]').forEach(bindSlamHold);
+  bindSlamJoystickControl('slamJoystick', 'slamKnob', 'slamMoveState');
+  bindSlamStrafeControl('slamStrafeSlider', 'slamStrafeKnob', 'slamMoveState');
   if ($('slamLinearSpeed')) $('slamLinearSpeed').oninput = () => setText('slamLinearVal', $('slamLinearSpeed').value);
   if ($('slamAngularSpeed')) $('slamAngularSpeed').oninput = () => setText('slamAngularVal', $('slamAngularSpeed').value);
 }

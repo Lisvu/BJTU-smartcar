@@ -40,6 +40,128 @@ async function move(kind) {
   await api(kind === 'stop' ? '/api/stop' : '/api/move', cmd);
 }
 
+
+function bindJoystickControl(rootId, knobId, stateId) {
+  const root = $(rootId);
+  const knob = $(knobId);
+  if (!root || !knob) return;
+  let activePointer = null;
+  let timer = null;
+  let currentKind = 'stop';
+  const radius = () => Math.max(36, root.clientWidth * 0.34);
+  const setKnob = (x, y) => {
+    knob.style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`;
+  };
+  const send = () => {
+    if (currentKind === 'stop') return;
+    move(currentKind).catch(() => setText(stateId, '运动命令发送失败'));
+  };
+  const update = (event) => {
+    const rect = root.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    let dx = event.clientX - cx;
+    let dy = event.clientY - cy;
+    const max = radius();
+    const dist = Math.hypot(dx, dy);
+    if (dist > max) {
+      dx = dx / dist * max;
+      dy = dy / dist * max;
+    }
+    setKnob(dx, dy);
+    const dead = max * 0.28;
+    if (Math.hypot(dx, dy) < dead) currentKind = 'stop';
+    else if (Math.abs(dy) >= Math.abs(dx)) currentKind = dy < 0 ? 'forward' : 'backward';
+    else currentKind = dx < 0 ? 'left' : 'right';
+    setText(stateId, currentKind === 'stop' ? '' : `操控：${root.dataset[currentKind] || currentKind}`);
+  };
+  const start = (event) => {
+    event.preventDefault();
+    if (activePointer !== null) return;
+    activePointer = event.pointerId;
+    root.setPointerCapture?.(event.pointerId);
+    update(event);
+    send();
+    timer = setInterval(send, 120);
+  };
+  const movePointer = (event) => {
+    if (activePointer !== event.pointerId) return;
+    event.preventDefault();
+    update(event);
+  };
+  const stop = (event) => {
+    if (activePointer !== null && event?.pointerId != null && event.pointerId !== activePointer) return;
+    if (timer) clearInterval(timer);
+    timer = null;
+    activePointer = null;
+    currentKind = 'stop';
+    setKnob(0, 0);
+    setText(stateId, '');
+    move('stop').catch(() => {});
+  };
+  root.addEventListener('pointerdown', start);
+  root.addEventListener('pointermove', movePointer);
+  root.addEventListener('pointerup', stop);
+  root.addEventListener('pointercancel', stop);
+  root.addEventListener('lostpointercapture', stop);
+}
+
+function bindStrafeControl(rootId, knobId, stateId) {
+  const root = $(rootId);
+  const knob = $(knobId);
+  if (!root || !knob) return;
+  let activePointer = null;
+  let timer = null;
+  let currentKind = 'stop';
+  const maxOffset = () => Math.max(44, root.clientWidth * 0.36);
+  const setKnob = (x) => {
+    knob.style.transform = `translate(calc(-50% + ${x}px), -50%)`;
+  };
+  const send = () => {
+    if (currentKind === 'stop') return;
+    move(currentKind).catch(() => setText(stateId, '运动命令发送失败'));
+  };
+  const update = (event) => {
+    const rect = root.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const max = maxOffset();
+    const dx = Math.max(-max, Math.min(max, event.clientX - cx));
+    setKnob(dx);
+    const dead = max * 0.22;
+    currentKind = Math.abs(dx) < dead ? 'stop' : (dx < 0 ? 'strafeLeft' : 'strafeRight');
+    setText(stateId, currentKind === 'stop' ? '' : `操控：${currentKind === 'strafeLeft' ? '左平移' : '右平移'}`);
+  };
+  const start = (event) => {
+    event.preventDefault();
+    if (activePointer !== null) return;
+    activePointer = event.pointerId;
+    root.setPointerCapture?.(event.pointerId);
+    update(event);
+    send();
+    timer = setInterval(send, 120);
+  };
+  const movePointer = (event) => {
+    if (activePointer !== event.pointerId) return;
+    event.preventDefault();
+    update(event);
+  };
+  const stop = (event) => {
+    if (activePointer !== null && event?.pointerId != null && event.pointerId !== activePointer) return;
+    if (timer) clearInterval(timer);
+    timer = null;
+    activePointer = null;
+    currentKind = 'stop';
+    setKnob(0);
+    setText(stateId, '');
+    move('stop').catch(() => {});
+  };
+  root.addEventListener('pointerdown', start);
+  root.addEventListener('pointermove', movePointer);
+  root.addEventListener('pointerup', stop);
+  root.addEventListener('pointercancel', stop);
+  root.addEventListener('lostpointercapture', stop);
+}
+
 function bindHold(button) {
   const kind = button.dataset.move;
   let timer = null;
@@ -285,8 +407,69 @@ function bindMapClick() {
   });
 }
 
+async function sendAiVoiceCommand(text) {
+  const cleaned = (text || '').trim();
+  if (!cleaned) {
+    setText('aiVoiceState', '没有命令');
+    return;
+  }
+  setText('aiVoiceState', '分析中');
+  setText('aiVoiceResult', `用户命令：${cleaned}
+正在调用 Agent...`);
+  try {
+    const result = await api('/api/agent/voice', { text: cleaned });
+    const action = result.plan?.action || 'none';
+    const stepCount = Array.isArray(result.plan?.steps) ? result.plan.steps.length : 0;
+    setText('aiVoiceState', result.ok ? `已执行：${action}${stepCount ? ` / ${stepCount}步` : ''}` : '未执行');
+    setText('aiVoiceResult', JSON.stringify(result, null, 2));
+    await refreshStatus();
+  } catch (err) {
+    setText('aiVoiceState', '失败');
+    setText('aiVoiceResult', `执行失败：${err.message || err}`);
+  }
+}
+
+function initAiVoiceControl() {
+  const input = $('aiVoiceText');
+  const sendBtn = $('sendAiVoiceText');
+  const voiceBtn = $('startAiVoice');
+  if (!input || !sendBtn || !voiceBtn) return;
+  sendBtn.onclick = () => sendAiVoiceCommand(input.value);
+  input.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') sendAiVoiceCommand(input.value);
+  });
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    voiceBtn.textContent = '语音不可用';
+    voiceBtn.disabled = true;
+    setText('aiVoiceState', '可输入文字');
+    return;
+  }
+  const recognition = new SpeechRecognition();
+  recognition.lang = 'zh-CN';
+  recognition.interimResults = false;
+  recognition.continuous = false;
+  recognition.onstart = () => setText('aiVoiceState', '正在听');
+  recognition.onerror = (event) => setText('aiVoiceState', `语音失败：${event.error || 'unknown'}`);
+  recognition.onend = () => {
+    if ($('aiVoiceState')?.textContent === '正在听') setText('aiVoiceState', '待命');
+  };
+  recognition.onresult = (event) => {
+    const text = event.results?.[0]?.[0]?.transcript || '';
+    input.value = text;
+    sendAiVoiceCommand(text);
+  };
+  voiceBtn.onclick = () => {
+    try { recognition.start(); }
+    catch (err) { setText('aiVoiceState', `语音启动失败：${err.message || err}`); }
+  };
+}
+
 function init() {
   document.querySelectorAll('[data-move]').forEach(bindHold);
+  initAiVoiceControl();
+  bindJoystickControl('driveJoystick', 'driveKnob', 'warning');
+  bindStrafeControl('strafeSlider', 'strafeKnob', 'warning');
   if ($('stopAll')) $('stopAll').onclick = () => api('/api/stop');
   if ($('linearSpeed')) $('linearSpeed').oninput = () => setText('linearVal', $('linearSpeed').value);
   if ($('angularSpeed')) $('angularSpeed').oninput = () => setText('angularVal', $('angularSpeed').value);

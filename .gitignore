@@ -29,6 +29,20 @@ dist/
 tmp/
 *.tmp
 *.log
+*.bak
+*.bak-*
+*.bak_*
+*.swp
+*~
+
+# Local IDE / app private settings
+project.private.config.json
+wechat-miniprogram/
+wechat-miniprogram/**/project.private.config.json
+wechat-miniprogram/**/dev-proxy*.log
+.deepseek_api_key
+*.key
+*.pem
 
 # Large generated / external files not stored in Git
 yahboomcar_ws/imu.txt
@@ -73,3 +87,8 @@ Rosmaster-App/rosmaster/static/Thumbs.db
 *.tar.gz
 *.tgz
 *.zip
+
+# Legacy duplicated smartcar web static files; runtime serves smartcar_web/static/
+yahboomcar_ws/smartcar_web/app.js
+yahboomcar_ws/smartcar_web/index.html
+yahboomcar_ws/smartcar_web/style.css
